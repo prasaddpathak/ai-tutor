@@ -73,28 +73,8 @@ async def get_topics(subject_id: int, difficulty_level: str):
         content_cache["generation_status"][cache_key] = "generating"
         
         try:
-            # Generate topics (this may take time)
-            topics_list = generate_topics(subject_dict['name'], difficulty_level)
-            
-            # Parse topics into structured format
-            topics = []
-            for topic_text in topics_list:
-                if '**' in topic_text:
-                    # Extract title and description from markdown format
-                    import re
-                    match = re.match(r'\*\*(.*?)\*\*(.*)', topic_text)
-                    if match:
-                        title = match.group(1).strip()
-                        description = match.group(2).strip()
-                    else:
-                        title = topic_text.strip()
-                        description = ""
-                else:
-                    title = topic_text.strip()
-                    description = ""
-                
-                if title:
-                    topics.append(Topic(title=title, description=description))
+            # Generate topics using improved curriculum service
+            topics = generate_topics(subject_dict['name'], difficulty_level)
             
             # Cache the results
             content_cache["topics"][cache_key] = {
@@ -159,23 +139,8 @@ async def get_chapters(subject_id: int, topic_title: str, difficulty_level: str)
         content_cache["generation_status"][cache_key] = "generating"
         
         try:
-            # Generate chapters (this may take time)
-            chapters_list = generate_chapters(topic_title, difficulty_level)
-            
-            # Parse chapters into structured format
-            chapters = []
-            for chapter_text in chapters_list:
-                import re
-                match = re.match(r'\*\*(.*?)\*\*(.*)', chapter_text)
-                if match:
-                    title = match.group(1).strip()
-                    content = chapter_text  # Keep full content
-                else:
-                    title = chapter_text.split('\n')[0].strip()
-                    content = chapter_text
-                
-                if title:
-                    chapters.append(Chapter(title=title, content=content))
+            # Generate chapters using improved curriculum service
+            chapters = generate_chapters(topic_title, difficulty_level)
             
             # Cache the results
             content_cache["chapters"][cache_key] = {
@@ -215,9 +180,12 @@ async def generate_topics_async(request: GenerateTopicsRequest, background_tasks
     
     def generate_in_background():
         try:
-            topics_list = generate_topics(request.subject_name, request.difficulty_level)
-            # Process and cache as in get_topics endpoint
-            # ... (similar processing logic)
+            topics = generate_topics(request.subject_name, request.difficulty_level)
+            # Cache the results
+            content_cache["topics"][cache_key] = {
+                "topics": topics,
+                "generated_at": datetime.now()
+            }
             content_cache["generation_status"][cache_key] = "completed"
         except Exception as e:
             content_cache["generation_status"][cache_key] = f"error: {str(e)}"

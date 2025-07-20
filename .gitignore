@@ -1,6 +1,6 @@
 .env
 .venv*/
-data/*.db
+*.db
 prompt/
 __pycache__
 *.npy
