@@ -1,33 +1,70 @@
+
+
 import customtkinter as ctk
 from tkinter import messagebox, simpledialog
 from app.auth.face_auth import authenticate, register_face
 from app.auth.camera import get_available_cameras
 from app.database import db
+from app.curriculum.curriculum_service import generate_topics, generate_chapters
 import cv2
 from PIL import Image, ImageTk
 import threading
-
 import time
+import re
 
 class AITutorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.title("AI Tutor")
+        self.geometry("1280x720")
+        self.resizable(False, False)
+
+        self.topic_cache = {}
+        self.chapter_cache = {}
+        self.student = None
+        self.current_view = None
+
+        self.container = ctk.CTkFrame(self)
+        self.container.pack(fill="both", expand=True)
+
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.show_login_view()
+
+    def show_login_view(self):
         self.title("AI Tutor - Login")
-        self.geometry("800x600")
+        if self.current_view:
+            self.current_view.destroy()
+        self.current_view = LoginView(self.container, self)
+        self.current_view.pack(fill="both", expand=True)
 
-        self.login_frame = ctk.CTkFrame(self)
-        self.login_frame.pack(pady=20, padx=60, fill="both", expand=True)
+    def show_main_view(self, student):
+        self.title(f"AI Tutor - Welcome, {student['name']}!")
+        self.student = student
+        if self.current_view:
+            self.current_view.destroy()
+        self.current_view = MainView(self.container, self)
+        self.current_view.pack(fill="both", expand=True)
 
-        self.label = ctk.CTkLabel(self.login_frame, text="Click Login or Register, then click Capture", font=ctk.CTkFont(size=20, weight="bold"))
+    def on_closing(self):
+        if self.current_view and hasattr(self.current_view, 'on_closing'):
+            self.current_view.on_closing()
+        self.destroy()
+
+class LoginView(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+
+        self.label = ctk.CTkLabel(self, text="Click Login or Register, then click Capture", font=ctk.CTkFont(size=20, weight="bold"))
         self.label.pack(pady=12, padx=10)
 
-        self.camera_frame = ctk.CTkFrame(self.login_frame)
+        self.camera_frame = ctk.CTkFrame(self)
         self.camera_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
         self.camera_label = ctk.CTkLabel(self.camera_frame, text="Camera will be shown here")
         self.camera_label.pack(pady=10, padx=10, fill="both", expand=True)
 
-        self.button_frame = ctk.CTkFrame(self.login_frame)
+        self.button_frame = ctk.CTkFrame(self)
         self.button_frame.pack(pady=10, padx=10)
 
         self.login_button = ctk.CTkButton(self.button_frame, text="Login", command=self._on_login_clicked)
@@ -39,37 +76,33 @@ class AITutorApp(ctk.CTk):
         self.capture_button = ctk.CTkButton(self.button_frame, text="Capture", command=self._on_capture, state="disabled")
         self.capture_button.pack(side="left", padx=10)
 
-        self.current_action = None # 'login' or 'register'
+        self.current_action = None
         self.student_name_for_registration = None
-        self.cap = None # Initialize cap to None
-        self.after_id = None # To store the ID of the after call
-        self.landing_page = None # To store the instance of LandingPage
+        self.cap = None
+        self.after_id = None
 
         self.camera_index = self._select_camera()
         if self.camera_index is None:
-            self.destroy()
-            return # Exit __init__ if no camera is selected
+            self.controller.destroy()
+            return
 
-        if not self.winfo_exists(): # Check if the window was destroyed by _select_camera
+        if not self.winfo_exists():
             return
 
         if not self._initialize_camera():
-            self.destroy()
+            self.controller.destroy()
             return
 
         self._start_camera_feed()
-        self.protocol("WM_DELETE_WINDOW", self.on_closing) # Add protocol for closing
 
     def _initialize_camera(self):
-        """Initialize the camera with retries."""
-        for _ in range(3): # Try 3 times
+        for _ in range(3):
             self.cap = cv2.VideoCapture(self.camera_index)
             if self.cap.isOpened():
                 return True
-            time.sleep(0.5) # Wait before retrying
-        messagebox.showerror("Camera Error", "Failed to open camera. Please check if it's in use or properly connected.")
+            time.sleep(0.5)
+        messagebox.showerror("Camera Error", "Failed to open camera.")
         return False
-
 
     def _start_camera_feed(self):
         if self.after_id:
@@ -77,9 +110,9 @@ class AITutorApp(ctk.CTk):
         self._update_frame()
 
     def _update_frame(self):
-        if not self.winfo_exists(): # Check if window still exists
+        if not self.winfo_exists():
             return
-        if self.cap and self.cap.isOpened(): # Check if camera is open
+        if self.cap and self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
                 img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -87,7 +120,6 @@ class AITutorApp(ctk.CTk):
                 img = ctk.CTkImage(light_image=img, dark_image=img, size=(640, 480))
                 self.camera_label.configure(image=img, text="")
                 self.camera_label.image = img
-
         self.after_id = self.after(10, self._update_frame)
 
     def _on_login_clicked(self):
@@ -108,20 +140,15 @@ class AITutorApp(ctk.CTk):
     def _on_capture(self):
         self._disable_all_buttons()
         self.label.configure(text="Processing...")
-        
         if self.after_id:
-            self.after_cancel(self.after_id) # Stop updating the frame
-
+            self.after_cancel(self.after_id)
         ret, frame = self.cap.read()
         if not ret:
             messagebox.showerror("Capture Error", "Failed to capture frame.")
             self._reset_ui()
-            self._start_camera_feed() # Restart feed
+            self._start_camera_feed()
             return
-        
-        # Convert the frame to RGB before passing it to the auth functions
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
         if self.current_action == 'login':
             threading.Thread(target=self._threaded_login, args=(rgb_frame,)).start()
         elif self.current_action == 'register':
@@ -134,7 +161,7 @@ class AITutorApp(ctk.CTk):
         except Exception as e:
             self.after(0, lambda: messagebox.showerror("Login Failed", str(e)))
             self.after(0, self._reset_ui)
-            self.after(0, self._start_camera_feed) # Restart feed
+            self.after(0, self._start_camera_feed)
 
     def _threaded_register(self, name, frame):
         try:
@@ -143,7 +170,7 @@ class AITutorApp(ctk.CTk):
         except Exception as e:
             self.after(0, lambda: messagebox.showerror("Registration Failed", str(e)))
             self.after(0, self._reset_ui)
-            self.after(0, self._start_camera_feed) # Restart feed
+            self.after(0, self._start_camera_feed)
 
     def _handle_auth_success(self, name):
         student = db.get_student_by_name(name)
@@ -152,13 +179,8 @@ class AITutorApp(ctk.CTk):
             db.create_student(name, level)
             student = db.get_student_by_name(name)
         
-        self.withdraw()
-        if self.after_id:
-            self.after_cancel(self.after_id)
-        if self.cap:
-            self.cap.release()
-        self.landing_page = LandingPage(self, student)
-        self.landing_page.protocol("WM_DELETE_WINDOW", self._on_landing_page_close)
+        self.on_closing()
+        self.controller.show_main_view(student)
 
     def _prompt_for_difficulty(self):
         dialog = DifficultyLevelDialog(self)
@@ -171,7 +193,6 @@ class AITutorApp(ctk.CTk):
             return None
         if len(cameras) == 1:
             return 0
-        
         dialog = ctk.CTkInputDialog(text=f"Enter camera index (0 to {len(cameras) - 1}):", title="Select Camera")
         return int(dialog.get_input() or 0)
 
@@ -196,99 +217,238 @@ class AITutorApp(ctk.CTk):
     def on_closing(self):
         if self.after_id:
             self.after_cancel(self.after_id)
-        if self.cap:
+        if self.cap and self.cap.isOpened():
             self.cap.release()
-        self.destroy()
+        self.cap = None
 
-    def _on_landing_page_close(self):
-        if self.landing_page:
-            self.landing_page.destroy()
-            self.landing_page = None
-        self.deiconify() # Show the main window again
-        # Re-initialize camera and update frame if needed
-        if self.camera_index is not None:
-            self.after(500, self._reinitialize_camera_and_start_feed) # Wait 500ms
-        self._reset_ui()
-
-    def _reinitialize_camera_and_start_feed(self):
-        if self._initialize_camera():
-            self._start_camera_feed()
-        else:
-            self.destroy() # Close if camera fails to re-initialize
-
-    def _reinitialize_camera_and_start_feed(self):
-        if self._initialize_camera():
-            self._start_camera_feed()
-        else:
-            self.destroy() # Close if camera fails to re-initialize
-
-class LandingPage(ctk.CTkToplevel):
-    def __init__(self, parent, student):
+class MainView(ctk.CTkFrame):
+    def __init__(self, parent, controller):
         super().__init__(parent)
-        self.title(f"Welcome, {student['name']}!")
-        self.geometry("800x600")
-        self.profile = student
+        self.controller = controller
+        self.student = self.controller.student
+        self.current_frame = None
+        self.history = []
 
-        main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        self.show_subjects()
 
-        header_frame = ctk.CTkFrame(main_frame)
-        header_frame.pack(fill="x", pady=(0, 20))
+    def show_subjects(self):
+        self.clear_current_frame()
+        self.history.append(self.show_subjects)
+        self.current_frame = SubjectsView(self, self)
+        self.current_frame.pack(fill="both", expand=True)
 
-        welcome_label = ctk.CTkLabel(header_frame, text=f"Welcome back, {self.profile['name']}!", font=ctk.CTkFont(size=24, weight="bold"))
-        welcome_label.pack(pady=20)
+    def show_topics(self, subject):
+        self.clear_current_frame()
+        self.history.append(lambda: self.show_topics(subject))
+        self.current_frame = TopicsView(self, self, subject)
+        self.current_frame.pack(fill="both", expand=True)
 
-        self.level_label = ctk.CTkLabel(header_frame, text=f"Difficulty Level: {self.profile['difficulty_level']}", font=ctk.CTkFont(size=16))
-        self.level_label.pack(pady=(0, 10))
+    def show_chapters(self, topic_title, subject):
+        self.clear_current_frame()
+        self.history.append(lambda: self.show_chapters(topic_title, subject))
+        self.current_frame = ChaptersView(self, self, topic_title, subject)
+        self.current_frame.pack(fill="both", expand=True)
 
-        content_frame = ctk.CTkFrame(main_frame)
-        content_frame.pack(fill="both", expand=True, pady=(0, 20))
+    def go_back(self):
+        if len(self.history) > 1:
+            self.history.pop()
+            previous_view_func = self.history.pop()
+            previous_view_func()
 
-        subjects_label = ctk.CTkLabel(content_frame, text="Choose a Subject to Start Learning:", font=ctk.CTkFont(size=18, weight="bold"))
-        subjects_label.pack(pady=(30, 20))
+    def clear_current_frame(self):
+        if self.current_frame:
+            self.current_frame.destroy()
+        self.current_frame = None
+    
+    def on_closing(self):
+        pass
+
+class SubjectsView(ctk.CTkFrame):
+    def __init__(self, parent, main_view_controller):
+        super().__init__(parent)
+        self.main_view_controller = main_view_controller
+
+        header_frame = ctk.CTkFrame(self)
+        header_frame.pack(fill="x", pady=(0, 20), padx=20)
+
+        welcome_label = ctk.CTkLabel(header_frame, text=f"Welcome back, {self.main_view_controller.student['name']}!", font=ctk.CTkFont(size=24, weight="bold"))
+        welcome_label.pack(pady=10)
+
+        subjects_label = ctk.CTkLabel(self, text="Choose a Subject to Start Learning:", font=ctk.CTkFont(size=18, weight="bold"))
+        subjects_label.pack(pady=(10, 20))
 
         subjects = db.get_all_subjects()
-        subjects_frame = ctk.CTkFrame(content_frame)
-        subjects_frame.pack(expand=True, fill="both", padx=20, pady=20)
+        scrollable_frame = ctk.CTkScrollableFrame(self)
+        scrollable_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        row, col = 0, 0
-        for subject in subjects:
-            btn = ctk.CTkButton(subjects_frame, text=subject['name'], width=200, height=80, font=ctk.CTkFont(size=14, weight="bold"), command=lambda s=subject: self._select_subject(s))
-            btn.grid(row=row, column=col, padx=15, pady=15, sticky="nsew")
-            col += 1
-            if col > 2:
-                col = 0
-                row += 1
+        for i, subject in enumerate(subjects):
+            btn = ctk.CTkButton(scrollable_frame, text=subject['name'], font=ctk.CTkFont(size=14, weight="bold"),
+                                command=lambda s=subject: self.main_view_controller.show_topics(s))
+            btn.pack(pady=10, padx=20, fill="x")
 
-        for i in range(3):
-            subjects_frame.grid_columnconfigure(i, weight=1)
-        for i in range(row + 1):
-            subjects_frame.grid_rowconfigure(i, weight=1)
+class TopicsView(ctk.CTkFrame):
+    def __init__(self, parent, main_view_controller, subject):
+        super().__init__(parent)
+        self.main_view_controller = main_view_controller
+        self.subject = subject
 
-        bottom_frame = ctk.CTkFrame(main_frame)
-        bottom_frame.pack(fill="x")
+        header_frame = ctk.CTkFrame(self)
+        header_frame.pack(fill="x", pady=(0, 10), padx=10)
 
-        logout_btn = ctk.CTkButton(bottom_frame, text="Logout", command=self.logout, width=120, height=40)
-        logout_btn.pack(side="right", padx=20, pady=15)
+        back_button = ctk.CTkButton(header_frame, text="< Back to Subjects", command=self.main_view_controller.go_back)
+        back_button.pack(side="left", padx=10, pady=10)
 
-        profile_btn = ctk.CTkButton(bottom_frame, text="Edit Profile", command=self._edit_profile, width=120, height=40)
-        profile_btn.pack(side="right", padx=(0, 10), pady=15)
+        title_label = ctk.CTkLabel(header_frame, text=f"Topics for {self.subject['name']}", font=ctk.CTkFont(size=20, weight="bold"))
+        title_label.pack(side="left", expand=True, pady=10, padx=20)
 
-    def logout(self):
-        self.master._on_landing_page_close()
+        self.scrollable_frame = ctk.CTkScrollableFrame(self)
+        self.scrollable_frame.pack(expand=True, fill="both", padx=20, pady=20)
+        
+        self.loading_label = ctk.CTkLabel(self.scrollable_frame, text="Loading topics...", font=ctk.CTkFont(size=16))
+        self.loading_label.pack(pady=20)
 
-    def _select_subject(self, subject):
-        messagebox.showinfo("Subject Selected", f"You selected {subject['name']}!\n\nThis will open the curriculum for {subject['name']} at {self.profile['difficulty_level']} level.\n\n(Feature coming in Stage 3)")
+        self.load_topics()
 
-    def _edit_profile(self):
-        dialog = DifficultyLevelDialog(self)
-        new_level = dialog.get_selection()
-        if new_level and new_level != self.profile['difficulty_level']:
-            with db.get_connection() as conn:
-                conn.execute('UPDATE students SET difficulty_level = ? WHERE id = ?', (new_level, self.profile['id']))
-            self.profile['difficulty_level'] = new_level
-            self.level_label.configure(text=f"Difficulty Level: {new_level}")
-            messagebox.showinfo("Profile Updated", f"Difficulty level changed to {new_level}")
+    def load_topics(self):
+        if self.subject['name'] in self.main_view_controller.controller.topic_cache:
+            self.display_topics(self.main_view_controller.controller.topic_cache[self.subject['name']])
+        else:
+            threading.Thread(target=self._threaded_load_topics, daemon=True).start()
+
+    def _threaded_load_topics(self):
+        try:
+            topics = generate_topics(self.subject['name'], self.main_view_controller.student['difficulty_level'])
+            self.main_view_controller.controller.topic_cache[self.subject['name']] = topics
+            self.after(0, self.display_topics, topics)
+        except Exception as e:
+            self.after(0, self.show_error, f"Failed to generate curriculum: {e}")
+
+    def display_topics(self, topics):
+        self.loading_label.pack_forget()
+        if not topics:
+            messagebox.showinfo("Curriculum", "Could not generate topics for this subject.")
+            self.main_view_controller.go_back()
+            return
+
+        for topic_text in topics:
+            self.create_topic_tile(topic_text)
+
+    def create_topic_tile(self, topic_text):
+        match = re.match(r'\*\*(.*?)\*\*(.*)', topic_text)
+        if match:
+            title, description = match.groups()
+            title = title.strip()
+            description = description.strip()
+        else:
+            title = topic_text.strip()
+            description = ""
+
+        if not title:
+            return
+
+        tile_frame = ctk.CTkFrame(self.scrollable_frame, corner_radius=10, fg_color="#3b8ed0")
+        tile_frame.pack(pady=5, padx=10, fill="x")
+
+        tile_frame.bind("<Enter>", lambda e, f=tile_frame: f.configure(fg_color="#36719f"))
+        tile_frame.bind("<Leave>", lambda e, f=tile_frame: f.configure(fg_color="#3b8ed0"))
+
+        title_label = ctk.CTkLabel(tile_frame, text=title, font=ctk.CTkFont(size=16, weight="bold"), anchor="w", fg_color="transparent")
+        title_label.pack(pady=(10, 5), padx=20, fill="x")
+
+        if description:
+            desc_label = ctk.CTkLabel(tile_frame, text=description, wraplength=900, anchor="w", fg_color="transparent")
+            desc_label.pack(pady=(0, 10), padx=20, fill="x")
+        
+        command = lambda event, t=title: self.main_view_controller.show_chapters(t, self.subject)
+        tile_frame.bind("<Button-1>", command)
+        title_label.bind("<Button-1>", command)
+        if description:
+            desc_label.bind("<Button-1>", command)
+
+    def show_error(self, message):
+        messagebox.showerror("Error", message)
+        self.main_view_controller.go_back()
+
+class ChaptersView(ctk.CTkFrame):
+    def __init__(self, parent, main_view_controller, topic_title, subject):
+        super().__init__(parent)
+        self.main_view_controller = main_view_controller
+        self.topic_title = topic_title
+        self.subject = subject
+
+        header_frame = ctk.CTkFrame(self)
+        header_frame.pack(fill="x", pady=(0, 10), padx=10)
+
+        back_button = ctk.CTkButton(header_frame, text="< Back to Topics", command=self.main_view_controller.go_back)
+        back_button.pack(side="left", padx=10, pady=10)
+
+        title_label = ctk.CTkLabel(header_frame, text=f"Chapters for {self.topic_title}", font=ctk.CTkFont(size=20, weight="bold"))
+        title_label.pack(side="left", expand=True, pady=10, padx=20)
+
+        self.content_pane = ctk.CTkFrame(self, fg_color="transparent")
+        self.content_pane.pack(expand=True, fill="both", padx=10, pady=10)
+        self.content_pane.grid_columnconfigure(1, weight=1)
+        self.content_pane.grid_rowconfigure(0, weight=1)
+
+        self.nav_pane = ctk.CTkScrollableFrame(self.content_pane, width=350)
+        self.nav_pane.grid(row=0, column=0, padx=(0, 10), pady=10, sticky="ns")
+        self.content_pane.grid_columnconfigure(0, weight=0)
+
+        self.text_pane = ctk.CTkTextbox(self.content_pane, wrap="word")
+        self.text_pane.grid(row=0, column=1, pady=10, sticky="nsew")
+        self.text_pane.insert("1.0", "Select a chapter to view its content.")
+        self.text_pane.configure(state="disabled")
+
+        self.loading_label = ctk.CTkLabel(self.nav_pane, text="Loading chapters...", font=ctk.CTkFont(size=16))
+        self.loading_label.pack(pady=20)
+
+        self.load_chapters()
+
+    def load_chapters(self):
+        cache_key = f"{self.subject['name']}_{self.topic_title}"
+        if cache_key in self.main_view_controller.controller.chapter_cache:
+            self.display_chapters_nav(self.main_view_controller.controller.chapter_cache[cache_key])
+        else:
+            threading.Thread(target=self._threaded_load_chapters, args=(cache_key,), daemon=True).start()
+
+    def _threaded_load_chapters(self, cache_key):
+        try:
+            chapters = generate_chapters(self.topic_title, self.main_view_controller.student['difficulty_level'])
+            self.main_view_controller.controller.chapter_cache[cache_key] = chapters
+            self.after(0, self.display_chapters_nav, chapters)
+        except Exception as e:
+            self.after(0, self.show_error, f"Failed to generate chapters: {e}")
+
+    def display_chapters_nav(self, chapters):
+        self.loading_label.pack_forget()
+        if not chapters:
+            messagebox.showinfo("Chapters", f"Could not generate chapters for {self.topic_title}.")
+            self.main_view_controller.go_back()
+            return
+
+        for chapter_text in chapters:
+            self.create_chapter_nav_item(chapter_text)
+
+    def create_chapter_nav_item(self, chapter_text):
+        match = re.match(r'\*\*(.*?)\*\*', chapter_text)
+        title = match.group(1).strip() if match else chapter_text.split('\n')[0].strip()
+
+        if not title:
+            return
+
+        nav_item = ctk.CTkButton(self.nav_pane, text=title, anchor="w",
+                                 command=lambda c=chapter_text: self.display_chapter_content(c))
+        nav_item.pack(fill="x", padx=10, pady=5)
+
+    def display_chapter_content(self, chapter_content):
+        self.text_pane.configure(state="normal")
+        self.text_pane.delete("1.0", "end")
+        self.text_pane.insert("1.0", chapter_content)
+        self.text_pane.configure(state="disabled")
+
+    def show_error(self, message):
+        messagebox.showerror("Error", message)
+        self.main_view_controller.go_back()
 
 class DifficultyLevelDialog(ctk.CTkToplevel):
     def __init__(self, parent):

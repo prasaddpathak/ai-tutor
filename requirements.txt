@@ -5,6 +5,8 @@ numpy==1.24.4
 pillow==10.0.0
 ttkbootstrap==1.10.1
 scikit-image
+python-dotenv
+requests
 
 
 

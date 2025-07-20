@@ -1,5 +1,7 @@
 .env
 .venv*/
+data/*.db
+prompt/
 __pycache__
 face_embeddings/
 *.pyc
