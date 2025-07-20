@@ -1,0 +1,18 @@
+# FastAPI Backend Dependencies
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.5.0
+
+# Keep existing core dependencies
+opencv-python==4.7.0.72
+numpy==1.24.4
+pillow==10.0.0
+scikit-image
+python-dotenv
+requests
+
+# Additional backend utilities
+python-jose[cryptography]  # For JWT tokens (future)
+passlib[bcrypt]           # For password hashing (future)
+aiofiles                  # For async file operations 

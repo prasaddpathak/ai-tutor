@@ -3,7 +3,9 @@
 data/*.db
 prompt/
 __pycache__
-face_embeddings/
+*.npy
+node_modules/
+dist/
 *.pyc
 *.pyo
 *.pyd
