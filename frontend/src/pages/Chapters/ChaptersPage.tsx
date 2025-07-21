@@ -11,11 +11,25 @@ import {
   Skeleton,
   Paper,
   Grid,
+  Chip,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material'
-import { ArrowBack, MenuBook } from '@mui/icons-material'
+import { 
+  ArrowBack, 
+  MenuBook,
+  AutoAwesome, 
+  CheckCircle, 
+  Refresh
+} from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from 'react-query'
+import { useQuery, useMutation, useQueryClient } from 'react-query'
 import ReactMarkdown from 'react-markdown'
 
 import { subjectsAPI } from '../../services/api'
@@ -25,18 +39,42 @@ const ChaptersPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId, topicTitle } = useParams<{ subjectId: string; topicTitle: string }>()
   const student = useAuthStore((state) => state.student)
+  const queryClient = useQueryClient()
   const [selectedChapter, setSelectedChapter] = React.useState<any>(null)
+  const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
 
   const { data: chaptersData, isLoading, error } = useQuery(
-    ['chapters', subjectId, topicTitle, student?.difficulty_level],
+    ['chapters', subjectId, topicTitle, student?.difficulty_level, student?.id],
     () => subjectsAPI.getChapters(
       parseInt(subjectId!), 
       decodeURIComponent(topicTitle!), 
-      student?.difficulty_level || 'School'
+      student?.difficulty_level || 'School',
+      false,
+      student?.id
     ).then(res => res.data),
     {
       enabled: !!subjectId && !!topicTitle && !!student,
       retry: 2,
+    }
+  )
+
+  const regenerateChaptersMutation = useMutation(
+    () => subjectsAPI.getChapters(
+      parseInt(subjectId!), 
+      decodeURIComponent(topicTitle!), 
+      student?.difficulty_level || 'School',
+      true,
+      student?.id
+    ),
+    {
+      onSuccess: (response) => {
+        queryClient.setQueryData(['chapters', subjectId, topicTitle, student?.difficulty_level, student?.id], response.data)
+        setRegenerateDialogOpen(false)
+        setSelectedChapter(null) // Reset selected chapter
+      },
+      onError: (error) => {
+        console.error('Failed to regenerate chapters:', error)
+      }
     }
   )
 
@@ -46,6 +84,19 @@ const ChaptersPage: React.FC = () => {
 
   const handleChapterSelect = (chapter: any) => {
     setSelectedChapter(chapter)
+  }
+
+  const handleRegenerate = () => {
+    setRegenerateDialogOpen(true)
+  }
+
+  const confirmRegenerate = () => {
+    regenerateChaptersMutation.mutate()
+  }
+
+  const isCurrentlyGenerating = () => {
+    if (!chaptersData) return false
+    return chaptersData.generating || false
   }
 
   if (error) {
@@ -82,9 +133,27 @@ const ChaptersPage: React.FC = () => {
         </Button>
 
         <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography variant="h3" fontWeight="bold" gutterBottom>
-            {decodeURIComponent(topicTitle || '')}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
+            <Typography variant="h3" fontWeight="bold">
+              {decodeURIComponent(topicTitle || '')}
+            </Typography>
+            {/* Only show regenerate button if content exists and not currently generating */}
+            {chaptersData?.is_generated && !isCurrentlyGenerating() && (
+              <Tooltip title="Regenerate chapters with fresh AI content">
+                <IconButton
+                  onClick={handleRegenerate}
+                  color="primary"
+                  disabled={regenerateChaptersMutation.isLoading}
+                >
+                  {regenerateChaptersMutation.isLoading ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <Refresh />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
           <Typography variant="h6" color="textSecondary">
             {isLoading ? 'Loading chapters...' : 'Select a chapter to read the content'}
           </Typography>
@@ -96,9 +165,19 @@ const ChaptersPage: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Card sx={{ height: 'fit-content', position: 'sticky', top: 24 }}>
             <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Chapters
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Chapters
+                </Typography>
+                {chaptersData?.chapters && chaptersData.chapters.length > 0 && (
+                  <Chip
+                    label={`${chaptersData.chapters.length} chapters`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+              </Box>
 
               {/* Loading State */}
               {isLoading && (
@@ -115,7 +194,7 @@ const ChaptersPage: React.FC = () => {
               )}
 
               {/* Generation in Progress */}
-              {chaptersData?.generating && (
+              {isCurrentlyGenerating() && (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
                   <CircularProgress size={32} sx={{ mb: 2 }} />
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
@@ -128,7 +207,7 @@ const ChaptersPage: React.FC = () => {
               )}
 
               {/* Chapters List */}
-              {chaptersData?.chapters && chaptersData.chapters.length > 0 && (
+              {!isLoading && chaptersData?.chapters && chaptersData.chapters.length > 0 && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {chaptersData.chapters.map((chapter: any, index: number) => {
                     const isSelected = selectedChapter?.title === chapter.title
@@ -154,11 +233,20 @@ const ChaptersPage: React.FC = () => {
                             transition: 'all 0.2s ease-in-out',
                           }}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                             <MenuBook fontSize="small" />
-                            <Typography variant="body2" sx={{ textTransform: 'none' }}>
-                              {chapter.title}
-                            </Typography>
+                            <Box sx={{ textAlign: 'left', flex: 1 }}>
+                              <Typography variant="body2" sx={{ textTransform: 'none' }}>
+                                {chapter.title}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={`#${index + 1}`}
+                              size="small"
+                              color={isSelected ? "default" : "primary"}
+                              variant="outlined"
+                              sx={{ minWidth: 'auto', fontSize: '0.7rem' }}
+                            />
                           </Box>
                         </Button>
                       </motion.div>
@@ -168,7 +256,7 @@ const ChaptersPage: React.FC = () => {
               )}
 
               {/* Empty State */}
-              {chaptersData?.chapters && chaptersData.chapters.length === 0 && !isLoading && !chaptersData.generating && (
+              {!isLoading && (!chaptersData?.chapters || chaptersData.chapters.length === 0) && !isCurrentlyGenerating() && (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="body2" color="textSecondary">
                     No chapters available
@@ -194,7 +282,7 @@ const ChaptersPage: React.FC = () => {
                     {selectedChapter.title}
                   </Typography>
                   
-                  <Box 
+                  <Box
                     sx={{ 
                       '& h1, & h2, & h3, & h4, & h5, & h6': {
                         color: 'primary.main',
@@ -226,36 +314,27 @@ const ChaptersPage: React.FC = () => {
                         borderRadius: 1,
                         fontFamily: 'monospace',
                       },
-                                             '& blockquote': {
-                         borderLeft: '4px solid',
-                         borderColor: 'primary.main',
-                         pl: 2,
-                         ml: 0,
-                         fontStyle: 'italic',
-                         bgcolor: 'rgba(25, 118, 210, 0.04)',
-                       },
+                      '& blockquote': {
+                        borderLeft: '4px solid',
+                        borderColor: 'primary.main',
+                        pl: 2,
+                        ml: 0,
+                        fontStyle: 'italic',
+                        bgcolor: 'rgba(25, 118, 210, 0.04)',
+                      },
                     }}
                   >
                     <ReactMarkdown>{selectedChapter.content}</ReactMarkdown>
                   </Box>
                 </motion.div>
               ) : (
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    minHeight: '50vh',
-                    textAlign: 'center',
-                  }}
-                >
-                  <MenuBook sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <MenuBook sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
                   <Typography variant="h5" gutterBottom>
                     Select a Chapter
                   </Typography>
                   <Typography variant="body1" color="textSecondary">
-                    Choose a chapter from the sidebar to start reading
+                    Choose a chapter from the list to view its detailed content
                   </Typography>
                 </Box>
               )}
@@ -263,6 +342,36 @@ const ChaptersPage: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Regenerate Confirmation Dialog */}
+      <Dialog
+        open={regenerateDialogOpen}
+        onClose={() => setRegenerateDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Regenerate Chapters?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will generate fresh AI content for all chapters in this topic. 
+            The current chapters will be replaced. This process may take several minutes.
+            Are you sure you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRegenerateDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmRegenerate} 
+            variant="contained" 
+            color="primary"
+            disabled={regenerateChaptersMutation.isLoading}
+          >
+            {regenerateChaptersMutation.isLoading ? 'Regenerating...' : 'Regenerate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }

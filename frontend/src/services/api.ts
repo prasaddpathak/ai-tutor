@@ -114,14 +114,22 @@ export const cameraAPI = {
 export const subjectsAPI = {
   getAll: () => api.get<Subject[]>('/subjects/'),
   
-  getTopics: (subjectId: number, difficultyLevel: string) =>
+  getTopics: (subjectId: number, difficultyLevel: string, forceRegenerate?: boolean, studentId?: number) =>
     api.get(`/subjects/${subjectId}/topics`, {
-      params: { difficulty_level: difficultyLevel }
+      params: { 
+        difficulty_level: difficultyLevel,
+        student_id: studentId,
+        ...(forceRegenerate && { force_regenerate: forceRegenerate })
+      }
     }),
   
-  getChapters: (subjectId: number, topicTitle: string, difficultyLevel: string) =>
+  getChapters: (subjectId: number, topicTitle: string, difficultyLevel: string, forceRegenerate?: boolean, studentId?: number) =>
     api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters`, {
-      params: { difficulty_level: difficultyLevel }
+      params: { 
+        difficulty_level: difficultyLevel,
+        student_id: studentId,
+        ...(forceRegenerate && { force_regenerate: forceRegenerate })
+      }
     }),
   
   generateTopics: (subjectName: string, difficultyLevel: string) =>
@@ -130,8 +138,27 @@ export const subjectsAPI = {
       difficulty_level: difficultyLevel
     }),
   
-  getGenerationStatus: (cacheKey: string) =>
-    api.get(`/subjects/generation-status/${cacheKey}`)
+  getGenerationStatus: (contentKey: string) =>
+    api.get(`/subjects/generation-status/${contentKey}`),
+  
+  clearTopicsContent: (subjectId: number, difficultyLevel: string, studentId: number) =>
+    api.delete(`/subjects/${subjectId}/topics/content`, {
+      params: { 
+        difficulty_level: difficultyLevel,
+        student_id: studentId
+      }
+    }),
+  
+  clearChaptersContent: (subjectId: number, topicTitle: string, difficultyLevel: string, studentId: number) =>
+    api.delete(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/content`, {
+      params: { 
+        difficulty_level: difficultyLevel,
+        student_id: studentId
+      }
+    }),
+  
+  getUserGeneratedContent: (studentId: number) => 
+    api.get(`/subjects/user/${studentId}/generated-content`)
 }
 
 // Students API

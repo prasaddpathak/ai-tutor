@@ -9,11 +9,24 @@ import {
   CircularProgress,
   Alert,
   Skeleton,
+  Chip,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material'
-import { ArrowBack } from '@mui/icons-material'
+import { 
+  ArrowBack, 
+  AutoAwesome, 
+  CheckCircle, 
+  Refresh
+} from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from 'react-query'
+import { useQuery, useMutation, useQueryClient } from 'react-query'
 
 import { subjectsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
@@ -22,13 +35,50 @@ const TopicsPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId } = useParams<{ subjectId: string }>()
   const student = useAuthStore((state) => state.student)
+  const queryClient = useQueryClient()
+  const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
 
-  const { data: topicsData, isLoading, error } = useQuery(
-    ['topics', subjectId, student?.difficulty_level],
-    () => subjectsAPI.getTopics(parseInt(subjectId!), student?.difficulty_level || 'School').then(res => res.data),
+  const { data: topicsData, isLoading, error, refetch } = useQuery(
+    ['topics', subjectId, student?.difficulty_level, student?.id],
+    () => subjectsAPI.getTopics(
+      parseInt(subjectId!), 
+      student?.difficulty_level || 'School', 
+      false, 
+      student?.id
+    ).then(res => res.data),
     {
       enabled: !!subjectId && !!student,
       retry: 2,
+    }
+  )
+
+  // Get user-specific generated content to check for chapter availability per topic
+  const { data: userContent } = useQuery(
+    ['user-generated-content', student?.id],
+    () => subjectsAPI.getUserGeneratedContent(student!.id).then(res => res.data),
+    {
+      enabled: !!student?.id,
+      retry: 1,
+      staleTime: 30 * 1000, // 30 seconds
+      refetchInterval: 30 * 1000, // Refresh every 30 seconds
+    }
+  )
+
+  const regenerateTopicsMutation = useMutation(
+    () => subjectsAPI.getTopics(
+      parseInt(subjectId!), 
+      student?.difficulty_level || 'School', 
+      true, 
+      student?.id
+    ),
+    {
+      onSuccess: (response) => {
+        queryClient.setQueryData(['topics', subjectId, student?.difficulty_level, student?.id], response.data)
+        setRegenerateDialogOpen(false)
+      },
+      onError: (error) => {
+        console.error('Failed to regenerate topics:', error)
+      }
     }
   )
 
@@ -38,6 +88,27 @@ const TopicsPage: React.FC = () => {
 
   const handleBack = () => {
     navigate('/subjects')
+  }
+
+  const handleRegenerate = () => {
+    setRegenerateDialogOpen(true)
+  }
+
+  const confirmRegenerate = () => {
+    regenerateTopicsMutation.mutate()
+  }
+
+  const checkTopicHasChapters = (topicTitle: string) => {
+    if (!userContent || !student || !topicsData?.subject) return false
+    
+    // Check if chapters exist for this specific topic
+    const chapterKey = `${student.id}_${topicsData.subject.name}_${topicTitle}_${student.difficulty_level}`
+    return userContent.chapters_keys?.includes(chapterKey) || false
+  }
+
+  const isCurrentlyGenerating = () => {
+    if (!topicsData) return false
+    return topicsData.generating || false
   }
 
   if (error) {
@@ -74,9 +145,27 @@ const TopicsPage: React.FC = () => {
         </Button>
 
         <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography variant="h3" fontWeight="bold" gutterBottom>
-            {topicsData?.subject?.name || 'Topics'}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
+            <Typography variant="h3" fontWeight="bold">
+              {topicsData?.subject?.name || 'Topics'}
+            </Typography>
+            {/* Only show regenerate button if content exists and not currently generating */}
+            {topicsData?.is_generated && !isCurrentlyGenerating() && (
+              <Tooltip title="Regenerate topics with fresh AI content">
+                <IconButton
+                  onClick={handleRegenerate}
+                  color="primary"
+                  disabled={regenerateTopicsMutation.isLoading}
+                >
+                  {regenerateTopicsMutation.isLoading ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <Refresh />
+                  )}
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
           <Typography variant="h6" color="textSecondary">
             {isLoading ? 'Loading topics...' : 'Choose a topic to explore detailed chapters'}
           </Typography>
@@ -98,7 +187,7 @@ const TopicsPage: React.FC = () => {
       )}
 
       {/* Generation in Progress */}
-      {topicsData?.generating && (
+      {isCurrentlyGenerating() && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -117,48 +206,69 @@ const TopicsPage: React.FC = () => {
       )}
 
       {/* Topics List */}
-      {topicsData?.topics && topicsData.topics.length > 0 && (
+      {!isLoading && topicsData?.topics && topicsData.topics.length > 0 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {topicsData.topics.map((topic: any, index: number) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-            >
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    boxShadow: 4,
-                    borderColor: 'primary.main',
-                  },
-                  border: '1px solid',
-                  borderColor: 'divider',
-                }}
-                onClick={() => handleTopicClick(topic.title)}
+          {topicsData.topics.map((topic: any, index: number) => {
+            const hasChapters = checkTopicHasChapters(topic.title)
+            
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
               >
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom color="primary">
-                    {topic.title}
-                  </Typography>
-                  {topic.description && (
-                    <Typography variant="body1" color="textSecondary">
-                      {topic.description}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                <Card
+                  sx={{
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      boxShadow: 4,
+                      borderColor: 'primary.main',
+                    },
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    position: 'relative',
+                  }}
+                  onClick={() => handleTopicClick(topic.title)}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
+                        <Typography variant="h5" fontWeight="bold" color="primary">
+                          {topic.title}
+                        </Typography>
+                        {hasChapters && (
+                          <Tooltip title="This topic has chapters generated">
+                            <CheckCircle sx={{ color: 'green', fontSize: '1.2rem' }} />
+                          </Tooltip>
+                        )}
+                      </Box>
+                      <Chip
+                        label={`#${index + 1}`}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ ml: 2, minWidth: 'auto' }}
+                      />
+                    </Box>
+                    {topic.description && (
+                      <Typography variant="body1" color="textSecondary">
+                        {topic.description}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )
+          })}
         </Box>
       )}
 
       {/* Empty State */}
-      {topicsData?.topics && topicsData.topics.length === 0 && !isLoading && !topicsData.generating && (
+      {!isLoading && (!topicsData?.topics || topicsData.topics.length === 0) && !isCurrentlyGenerating() && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -177,6 +287,36 @@ const TopicsPage: React.FC = () => {
           </Box>
         </motion.div>
       )}
+
+      {/* Regenerate Confirmation Dialog */}
+      <Dialog
+        open={regenerateDialogOpen}
+        onClose={() => setRegenerateDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Regenerate Topics?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will generate fresh AI content for all topics in this subject. 
+            The current topics will be replaced. This process may take a few minutes.
+            Are you sure you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRegenerateDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmRegenerate} 
+            variant="contained" 
+            color="primary"
+            disabled={regenerateTopicsMutation.isLoading}
+          >
+            {regenerateTopicsMutation.isLoading ? 'Regenerating...' : 'Regenerate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   )
 }
