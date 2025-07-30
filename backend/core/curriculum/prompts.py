@@ -30,35 +30,49 @@ def get_topics_prompt(subject: str, level: str) -> str:
     """
 
 def get_chapters_prompt(topic: str, level: str) -> str:
-    return f"""
-    You are an expert curriculum designer and educational specialist.
-    For the topic '{topic}' at the '{level}' level, generate a detailed, 
-    chapter-level syllabus with 8-12 chapters.
+    """Get the prompt for generating chapters for a given topic and level."""
     
-    CRITICAL REQUIREMENTS:
-    - Arrange chapters in OPTIMAL LEARNING SEQUENCE from basic to advanced
-    - Each chapter should logically build upon the previous chapter's content
-    - Follow a clear pedagogical progression: Introduction → Core Concepts → Applications → Advanced Topics
-    - Consider prerequisite knowledge and skill development at each step
-    - Ensure smooth transitions between chapters for {level} level students
-    - Include both theoretical understanding and practical application opportunities
+    level_descriptions = {
+        "School": "elementary to middle school level (ages 8-14)",
+        "High School": "high school level (ages 14-18)", 
+        "Intermediate": "college/university level (ages 18-22)",
+        "Advanced": "graduate/professional level (ages 22+)"
+    }
     
-    Return your response as a valid JSON array of objects, where each object has:
-    - "title": The chapter name (concise, 3-8 words that clearly indicate learning progression)
-    - "content": Comprehensive chapter content including:
-      * Learning objectives for this stage
-      * Key concepts introduced (and how they build on previous chapters)
-      * Important skills developed
-      * Examples and applications relevant to {level} level
-      * How this chapter prepares students for subsequent learning (2-4 paragraphs)
+    level_desc = level_descriptions.get(level, "appropriate for the specified level")
     
-    Example format:
-    [
-        {{"title": "Chapter 1: Foundational Concepts", "content": "This introductory chapter establishes the fundamental building blocks students need before progressing further...\\n\\nLearning objectives include understanding basic terminology, recognizing key patterns, and developing initial problem-solving strategies...\\n\\nStudents will master essential skills that serve as prerequisites for all subsequent chapters, ensuring a solid foundation for advanced learning...\\n\\nBy completing this chapter, students will be prepared to tackle more complex concepts introduced in Chapter 2."}},
-        {{"title": "Chapter 2: Building Core Skills", "content": "Building directly on Chapter 1's foundations, this chapter develops core competencies and introduces intermediate concepts..."}}
-    ]
-    
-    Ensure the JSON is valid and properly formatted. Do not include any additional text outside the JSON array.
-    REMEMBER: The sequence of chapters represents the optimal learning pathway - each chapter should naturally lead to the next.
-    Make the content comprehensive and educational, suitable for the {level} level with clear learning progression.
-    """
+    return f"""You are an expert curriculum designer and educational specialist.
+For the topic '{topic}' at the '{level_desc}' level, generate a detailed, 
+chapter-level syllabus with 6-8 chapters.
+
+CRITICAL REQUIREMENTS:
+- Arrange chapters in OPTIMAL LEARNING SEQUENCE from basic to advanced
+- Each chapter should logically build upon the previous chapter's content
+- Follow a clear pedagogical progression: Introduction → Core Concepts → Applications → Advanced Topics
+- Consider prerequisite knowledge and skill development at each step
+- Ensure smooth transitions between chapters for {level_desc} students
+- Include both theoretical understanding and practical application opportunities
+
+Return your response as a valid JSON array of objects, where each object has:
+- "title": The chapter name (concise, 3-8 words that clearly indicate learning progression)
+- "content": Comprehensive chapter description including:
+  * Learning objectives for this stage
+  * Key concepts introduced (and how they build on previous chapters)
+  * Important skills developed
+  * Examples and applications relevant to {level_desc}
+  * How this chapter prepares students for subsequent learning (2-4 paragraphs)
+
+Example format:
+[
+    {{"title": "Chapter 1: Foundational Concepts", "content": "This introductory chapter establishes the fundamental building blocks students need before progressing further...\\n\\nLearning objectives include understanding basic terminology, recognizing key patterns, and developing initial problem-solving strategies...\\n\\nStudents will master essential skills that serve as prerequisites for all subsequent chapters, ensuring a solid foundation for advanced learning...\\n\\nBy completing this chapter, students will be prepared to tackle more complex concepts introduced in Chapter 2."}},
+    {{"title": "Chapter 2: Building Core Skills", "content": "Building directly on Chapter 1's foundations, this chapter develops core competencies and introduces intermediate concepts..."}}
+]
+
+Ensure the JSON is valid and properly formatted. Do not include any additional text outside the JSON array.
+REMEMBER: The sequence of chapters represents the optimal learning pathway - each chapter should naturally lead to the next.
+Make the content comprehensive and educational, suitable for the {level_desc} with clear learning progression.
+
+Topic: {topic}
+Level: {level_desc}
+
+Generate the JSON array now:"""

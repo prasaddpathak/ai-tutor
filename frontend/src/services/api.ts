@@ -158,20 +158,87 @@ export const subjectsAPI = {
     }),
   
   getUserGeneratedContent: (studentId: number) => 
-    api.get(`/subjects/user/${studentId}/generated-content`)
+    api.get(`/subjects/user/${studentId}/generated-content`),
+
+  // Enhanced chapter and page API methods
+  generateChapterContent: (
+    subjectId: number,
+    topicTitle: string,
+    chapterTitle: string,
+    studentId: number,
+    difficultyLevel: string,
+    forceRegenerate: boolean = false
+  ) => {
+    return api.post(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/${encodeURIComponent(chapterTitle)}/generate-content`, {}, {
+      params: {
+        student_id: studentId,
+        difficulty_level: difficultyLevel,
+        force_regenerate: forceRegenerate
+      }
+    })
+  },
+
+  getChapterPages: (
+    subjectId: number,
+    topicTitle: string,
+    chapterTitle: string,
+    studentId: number,
+    difficultyLevel: string
+  ) => {
+    return api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/${encodeURIComponent(chapterTitle)}/pages`, {
+      params: {
+        student_id: studentId,
+        difficulty_level: difficultyLevel
+      }
+    })
+  },
+
+  getSpecificPage: (
+    subjectId: number,
+    topicTitle: string,
+    chapterTitle: string,
+    pageNumber: number,
+    studentId: number,
+    difficultyLevel: string
+  ) => {
+    return api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/${encodeURIComponent(chapterTitle)}/pages/${pageNumber}`, {
+      params: {
+        student_id: studentId,
+        difficulty_level: difficultyLevel
+      }
+    })
+  }
+}
+
+// Unified Progress API
+export const progressAPI = {
+  getUnifiedProgress: (studentId: number) => {
+    return api.get(`/students/${studentId}/progress/unified`)
+  },
+  
+  saveUnifiedProgress: (studentId: number, progress: {
+    subject_id: number,
+    topic: string,
+    chapter: string,
+    page: number,
+    completed: boolean,
+    time_spent: number
+  }) => {
+    return api.post(`/students/${studentId}/progress/unified`, progress)
+  },
+  
+  getTopicProgressSummary: (studentId: number, subjectId: number, topicTitle: string) => {
+    return api.get(`/students/${studentId}/progress/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/summary`)
+  },
+  
+  getChapterProgress: (studentId: number, subjectId: number, topicTitle: string, chapterTitle: string) => {
+    return api.get(`/students/${studentId}/progress/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/${encodeURIComponent(chapterTitle)}`)
+  }
 }
 
 // Students API
 export const studentsAPI = {
   get: (studentId: number) => api.get(`/students/${studentId}`),
-  getProgress: (studentId: number, subjectId?: number) =>
-    api.get(`/students/${studentId}/progress`, {
-      params: subjectId ? { subject_id: subjectId } : {}
-    }),
-  updateProgress: (studentId: number, subjectId: number, data: any) =>
-    api.post(`/students/${studentId}/progress`, data, {
-      params: { subject_id: subjectId }
-    }),
   getDashboard: (studentId: number) => api.get(`/students/${studentId}/dashboard`)
 }
 

@@ -1,87 +1,124 @@
 import React from 'react'
 import {
-  Box,
   Container,
+  Typography,
   Grid,
   Card,
   CardContent,
-  Typography,
+  Box,
   Button,
-  LinearProgress,
-  Chip,
   Avatar,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
   Paper,
+  LinearProgress,
+  CircularProgress
 } from '@mui/material'
 import {
+  Person,
   School,
   TrendingUp,
-  Assignment,
-  Timer,
-  StarBorder,
-  ArrowForward,
+  MenuBook,
+  Schedule,
+  CheckCircle,
+  PlayArrow,
+  Analytics,
+  EmojiEvents,
+  LocalFireDepartment
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
+import { useQuery } from 'react-query'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuthStore } from '../../stores/authStore'
+import { studentsAPI, subjectsAPI, progressAPI } from '../../services/api'
+import { ProgressIndicator, DetailedProgress } from '../../components/Progress/ProgressIndicator'
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate()
   const student = useAuthStore((state) => state.student)
 
-  const mockStats = {
-    totalSubjects: 6,
-    completedChapters: 12,
-    totalChapters: 45,
-    currentStreak: 5,
-    averageScore: 87,
-    hoursLearned: 24,
+  // Fetch enhanced dashboard data
+  const { data: dashboardData, isLoading } = useQuery(
+    ['dashboard', student?.id],
+    () => studentsAPI.getDashboard(student?.id!).then(res => res.data),
+    {
+      enabled: !!student?.id,
+    }
+  )
+
+  // Fetch subjects for navigation
+  const { data: subjects } = useQuery(
+    ['subjects'],
+    () => subjectsAPI.getAll().then(res => res.data),
+    {
+      enabled: !!student?.id,
+    }
+  )
+
+  // Fetch overall progress summary
+  const { data: overallProgress } = useQuery(
+    ['overallProgress', student?.id],
+    () => progressAPI.getOverallProgressSummary(student?.id!).then(res => res.data),
+    {
+      enabled: !!student?.id,
+    }
+  )
+
+  if (!student) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Typography variant="h4">Please log in to view your dashboard</Typography>
+      </Container>
+    )
   }
 
-  const recentActivity = [
-    {
-      subject: 'Computer Science',
-      topic: 'Data Structures',
-      chapter: 'Binary Trees',
-      progress: 75,
-      lastAccessed: '2 hours ago',
-    },
-    {
-      subject: 'Physics',
-      topic: 'Quantum Mechanics',
-      chapter: 'Wave Functions',
-      progress: 45,
-      lastAccessed: '1 day ago',
-    },
-    {
-      subject: 'Programming',
-      topic: 'Python Basics',
-      chapter: 'Object-Oriented Programming',
-      progress: 90,
-      lastAccessed: '3 days ago',
-    },
-  ]
-
-  const subjects = [
-    { name: 'Computer Science', icon: '💻', progress: 65, color: '#1976d2' },
-    { name: 'Programming', icon: '🚀', progress: 80, color: '#388e3c' },
-    { name: 'Data Science', icon: '📊', progress: 35, color: '#f57c00' },
-    { name: 'Physics', icon: '⚛️', progress: 50, color: '#7b1fa2' },
-    { name: 'Geography', icon: '🌍', progress: 20, color: '#0288d1' },
-    { name: 'History', icon: '📚', progress: 15, color: '#d32f2f' },
-  ]
-
-  const handleSubjectClick = () => {
-    navigate('/subjects')
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <CircularProgress size={60} />
+        </Box>
+      </Container>
+    )
   }
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
+  const getWelcomeMessage = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 80) return 'success'
+    if (percentage >= 60) return 'primary'
+    if (percentage >= 40) return 'warning'
+    return 'error'
+  }
+
+  const getMilestoneIcon = (percentage: number) => {
+    if (percentage >= 80) return <EmojiEvents />
+    if (percentage >= 60) return <LocalFireDepartment />
+    if (percentage >= 40) return <TrendingUp />
+    return <PlayArrow />
+  }
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0) {
+      return `${hours}h ${mins}m`
+    }
+    return `${mins}m`
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Welcome Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -90,7 +127,7 @@ const Dashboard: React.FC = () => {
       >
         <Box sx={{ mb: 4 }}>
           <Typography variant="h3" fontWeight="bold" gutterBottom>
-            Welcome back, {student?.name}! 👋
+            {getWelcomeMessage()}, {student.name}! 👋
           </Typography>
           <Typography variant="h6" color="textSecondary">
             Ready to continue your learning journey?
@@ -99,222 +136,284 @@ const Dashboard: React.FC = () => {
       </motion.div>
 
       <Grid container spacing={3}>
-        {/* Stats Overview */}
-        <Grid item xs={12}>
+        {/* Student Info Card */}
+        <Grid item xs={12} md={4}>
           <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <Paper sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <School sx={{ fontSize: 40, mb: 1 }} />
-                    <Typography variant="h4" fontWeight="bold">{mockStats.totalSubjects}</Typography>
-                    <Typography variant="body2">Subjects Available</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Assignment sx={{ fontSize: 40, mb: 1 }} />
-                    <Typography variant="h4" fontWeight="bold">{mockStats.completedChapters}/{mockStats.totalChapters}</Typography>
-                    <Typography variant="body2">Chapters Completed</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <TrendingUp sx={{ fontSize: 40, mb: 1 }} />
-                    <Typography variant="h4" fontWeight="bold">{mockStats.averageScore}%</Typography>
-                    <Typography variant="body2">Average Score</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <StarBorder sx={{ fontSize: 40, mb: 1 }} />
-                    <Typography variant="h4" fontWeight="bold">{mockStats.currentStreak}</Typography>
-                    <Typography variant="body2">Day Streak</Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Avatar
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    mx: 'auto',
+                    mb: 2,
+                    bgcolor: 'primary.main',
+                    fontSize: '2rem'
+                  }}
+                >
+                  {student.name.charAt(0).toUpperCase()}
+                </Avatar>
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  {student.name}
+                </Typography>
+                <Chip
+                  icon={<School />}
+                  label={student.difficulty_level}
+                  color="primary"
+                  variant="outlined"
+                  sx={{ mb: 2 }}
+                />
+                <Typography variant="body2" color="textSecondary">
+                  Member since {new Date(student.created_at).toLocaleDateString()}
+                </Typography>
+              </CardContent>
+            </Card>
           </motion.div>
         </Grid>
 
-        {/* Continue Learning */}
+        {/* Overall Progress Summary */}
         <Grid item xs={12} md={8}>
           <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {overallProgress && (
+              <DetailedProgress
+                title="Overall Learning Progress"
+                description="Your journey across all subjects"
+                completedPages={overallProgress.completed_pages || 0}
+                totalPages={overallProgress.total_pages || 0}
+                completedChapters={overallProgress.total_chapters || 0}
+                totalChapters={overallProgress.total_chapters || 0}
+                timeSpentMinutes={overallProgress.time_spent_minutes || 0}
+                level={student.difficulty_level}
+                achievements={['First Chapter Complete', 'Page Master', 'Consistent Learner']}
+              />
+            )}
+          </motion.div>
+        </Grid>
+
+        {/* Subject Progress Cards */}
+        <Grid item xs={12}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
+              Subject Progress
+            </Typography>
+            <Grid container spacing={2}>
+              {dashboardData?.subject_progress?.map((subject: any, index: number) => (
+                <Grid item xs={12} sm={6} md={4} key={subject.subject_id}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                  >
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: (theme) => theme.shadows[8],
+                        },
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                      onClick={() => navigate(`/subjects/${subject.subject_id}/topics`)}
+                    >
+                      <CardContent>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                          <Typography variant="h6" fontWeight="bold">
+                            {subject.subject_name}
+                          </Typography>
+                          {getMilestoneIcon(subject.completion_percentage)}
+                        </Box>
+                        
+                        <Box sx={{ mb: 2 }}>
+                          <ProgressIndicator
+                            type="linear"
+                            value={subject.completed_pages}
+                            total={subject.total_pages}
+                            label="Pages"
+                            color={getProgressColor(subject.completion_percentage) as any}
+                            size="small"
+                          />
+                        </Box>
+                        
+                        <Grid container spacing={1} sx={{ mb: 2 }}>
+                          <Grid item xs={6}>
+                            <Typography variant="caption" color="textSecondary">
+                              Chapters
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {subject.completed_chapters}/{subject.total_chapters}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="caption" color="textSecondary">
+                              Time
+                            </Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {formatTime(subject.time_spent_minutes)}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                        
+                        <Button
+                          variant="outlined"
+                          fullWidth
+                          size="small"
+                          startIcon={<PlayArrow />}
+                        >
+                          Continue Learning
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </motion.div>
+        </Grid>
+
+        {/* Recent Activity */}
+        <Grid item xs={12} md={6}>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
           >
             <Card sx={{ height: '100%' }}>
               <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h5" fontWeight="bold">
-                    Continue Learning
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    endIcon={<ArrowForward />}
-                    onClick={handleSubjectClick}
-                  >
-                    View All Subjects
-                  </Button>
-                </Box>
-
-                {recentActivity.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {recentActivity.map((activity, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Paper
-                          sx={{
-                            p: 2,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            cursor: 'pointer',
-                            '&:hover': {
-                              borderColor: 'primary.main',
-                              boxShadow: 2,
-                            },
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', justifyContent: 'between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {activity.subject}
-                            </Typography>
-                            <Chip label={activity.lastAccessed} size="small" />
-                          </Box>
-                          <Typography variant="body2" color="textSecondary" gutterBottom>
-                            {activity.topic} • {activity.chapter}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={activity.progress}
-                              sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                            />
-                            <Typography variant="body2" fontWeight="bold">
-                              {activity.progress}%
-                            </Typography>
-                          </Box>
-                        </Paper>
-                      </motion.div>
-                    ))}
-                  </Box>
-                ) : (
-                  <Box sx={{ textAlign: 'center', py: 6 }}>
-                    <School sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-                    <Typography variant="h6" gutterBottom>
-                      Start Your Learning Journey
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                      Choose a subject to begin your personalized learning experience
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      onClick={handleSubjectClick}
-                      startIcon={<School />}
-                    >
-                      Explore Subjects
-                    </Button>
-                  </Box>
-                )}
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Recent Activity
+                </Typography>
+                <List>
+                  {dashboardData?.recent_activity?.slice(0, 5).map((activity: any, index: number) => (
+                    <React.Fragment key={activity.id}>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          {activity.completed ? (
+                            <CheckCircle color="success" />
+                          ) : (
+                            <MenuBook color="primary" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={`${activity.chapter} - Page ${activity.page_number}`}
+                          secondary={`${activity.subject_name} • ${activity.topic} • ${formatTime(activity.time_spent_minutes)}`}
+                        />
+                      </ListItem>
+                      {index < dashboardData.recent_activity.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                  {(!dashboardData?.recent_activity || dashboardData.recent_activity.length === 0) && (
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemText
+                        primary="No recent activity"
+                        secondary="Start reading to see your progress here!"
+                      />
+                    </ListItem>
+                  )}
+                </List>
               </CardContent>
             </Card>
           </motion.div>
         </Grid>
 
-        {/* Quick Actions & Profile */}
-        <Grid item xs={12} md={4}>
+        {/* Quick Stats */}
+        <Grid item xs={12} md={6}>
           <motion.div
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ duration: 0.5, delay: 0.3 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
           >
-            <Card sx={{ mb: 2 }}>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar
-                    sx={{
-                      width: 60,
-                      height: 60,
-                      bgcolor: 'primary.main',
-                      fontSize: '1.5rem',
-                      mr: 2,
-                    }}
-                  >
-                    {student?.name?.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold">
-                      {student?.name}
-                    </Typography>
-                    <Chip
-                      label={student?.difficulty_level}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                  </Box>
-                </Box>
-                <Typography variant="body2" color="textSecondary">
-                  Learning at {student?.difficulty_level} level since{' '}
-                  {student?.created_at ? new Date(student.created_at).toLocaleDateString() : 'recently'}
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Learning Stats
                 </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}>
+                      <Typography variant="h4" fontWeight="bold">
+                        {overallProgress?.total_subjects || 0}
+                      </Typography>
+                      <Typography variant="caption">
+                        Subjects Started
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.main', color: 'white' }}>
+                      <Typography variant="h4" fontWeight="bold">
+                        {overallProgress?.completed_pages || 0}
+                      </Typography>
+                      <Typography variant="caption">
+                        Pages Completed
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.main', color: 'white' }}>
+                      <Typography variant="h4" fontWeight="bold">
+                        {formatTime(overallProgress?.time_spent_minutes || 0)}
+                      </Typography>
+                      <Typography variant="caption">
+                        Time Invested
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.main', color: 'white' }}>
+                      <Typography variant="h4" fontWeight="bold">
+                        {Math.round(overallProgress?.completion_percentage || 0)}%
+                      </Typography>
+                      <Typography variant="caption">
+                        Overall Progress
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
+          </motion.div>
+        </Grid>
 
-            {/* Subject Progress Overview */}
+        {/* Quick Actions */}
+        <Grid item xs={12}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+          >
             <Card>
               <CardContent>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Subject Progress
+                  Quick Actions
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {subjects.slice(0, 4).map((subject, index) => (
-                    <Box key={index}>
-                      <Box sx={{ display: 'flex', justifyContent: 'between', alignItems: 'center', mb: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <span style={{ fontSize: '1.2rem' }}>{subject.icon}</span>
-                          <Typography variant="body2">{subject.name}</Typography>
-                        </Box>
-                        <Typography variant="body2" fontWeight="bold">
-                          {subject.progress}%
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={subject.progress}
-                        sx={{
-                          height: 6,
-                          borderRadius: 3,
-                          bgcolor: 'grey.200',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: subject.color,
-                          },
-                        }}
-                      />
-                    </Box>
+                <Grid container spacing={2}>
+                  {subjects?.slice(0, 6).map((subject: any) => (
+                    <Grid item xs={12} sm={6} md={4} key={subject.id}>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<MenuBook />}
+                        onClick={() => navigate(`/subjects/${subject.id}/topics`)}
+                        sx={{ py: 1.5 }}
+                      >
+                        {subject.name}
+                      </Button>
+                    </Grid>
                   ))}
-                </Box>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  sx={{ mt: 2 }}
-                  onClick={handleSubjectClick}
-                >
-                  View All Subjects
-                </Button>
+                </Grid>
               </CardContent>
             </Card>
           </motion.div>

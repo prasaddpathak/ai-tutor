@@ -14,7 +14,11 @@ sys.path.insert(0, str(project_root))
 
 from backend.core.database import db
 from backend.models.auth import StudentResponse
-from backend.models.curriculum import StudentProgress, UpdateProgressRequest
+from backend.models.curriculum import (
+    StudentProgress, UpdateProgressRequest, PageProgress, UpdatePageProgressRequest,
+    ChapterProgressSummary, TopicProgressSummary, SubjectProgressSummary,
+    ProgressAnalyticsRequest
+)
 
 router = APIRouter()
 
@@ -35,89 +39,20 @@ async def get_student(student_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get student: {str(e)}")
 
-@router.get("/{student_id}/progress", response_model=List[StudentProgress])
-async def get_student_progress(student_id: int, subject_id: int = None):
-    """Get student progress, optionally filtered by subject."""
+@router.get("/{student_id}/progress")
+async def get_progress(student_id: int):
+    """Get unified progress for a student (subject, topic, chapter, page, all at once)."""
     try:
-        progress = db.get_student_progress(student_id, subject_id)
-        return [StudentProgress(**p) for p in progress]
-        
+        progress = db.get_unified_progress(student_id)
+        return progress
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get progress: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get unified progress: {str(e)}")
 
-@router.post("/{student_id}/progress")
-async def update_student_progress(
-    student_id: int, 
-    subject_id: int,
-    progress_data: UpdateProgressRequest
-):
-    """Update student progress for a chapter."""
+@router.post("/{student_id}/progress/update")
+async def update_progress(student_id: int, progress: dict):
+    """Update any progress (subject, topic, chapter, page) for a student."""
     try:
-        db.save_student_progress(
-            student_id=student_id,
-            subject_id=subject_id,
-            topic=progress_data.topic,
-            chapter=progress_data.chapter,
-            completed=progress_data.completed,
-            quiz_score=progress_data.quiz_score
-        )
-        
+        db.save_unified_progress(student_id, progress)
         return {"message": "Progress updated successfully"}
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update progress: {str(e)}")
-
-@router.get("/{student_id}/dashboard")
-async def get_student_dashboard(student_id: int):
-    """Get dashboard data for student including progress summary."""
-    try:
-        with db.get_connection() as conn:
-            # Get student info
-            student = conn.execute("SELECT * FROM students WHERE id = ?", (student_id,)).fetchone()
-            if not student:
-                raise HTTPException(status_code=404, detail="Student not found")
-            
-            # Get overall progress stats
-            progress_stats = conn.execute("""
-                SELECT 
-                    COUNT(*) as total_chapters,
-                    SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed_chapters,
-                    AVG(quiz_score) as avg_quiz_score,
-                    COUNT(DISTINCT subject_id) as subjects_started
-                FROM student_progress 
-                WHERE student_id = ?
-            """, (student_id,)).fetchone()
-            
-            # Get recent activity
-            recent_activity = conn.execute("""
-                SELECT sp.*, s.name as subject_name 
-                FROM student_progress sp
-                JOIN subjects s ON sp.subject_id = s.id
-                WHERE sp.student_id = ?
-                ORDER BY sp.created_at DESC
-                LIMIT 5
-            """, (student_id,)).fetchall()
-            
-            # Get subject-wise progress
-            subject_progress = conn.execute("""
-                SELECT 
-                    s.name as subject_name,
-                    s.id as subject_id,
-                    COUNT(sp.id) as total_chapters,
-                    SUM(CASE WHEN sp.completed = 1 THEN 1 ELSE 0 END) as completed_chapters,
-                    AVG(sp.quiz_score) as avg_score
-                FROM subjects s
-                LEFT JOIN student_progress sp ON s.id = sp.subject_id AND sp.student_id = ?
-                GROUP BY s.id, s.name
-                ORDER BY s.name
-            """, (student_id,)).fetchall()
-            
-            return {
-                "student": StudentResponse(**dict(student)),
-                "stats": dict(progress_stats) if progress_stats else {},
-                "recent_activity": [dict(row) for row in recent_activity],
-                "subject_progress": [dict(row) for row in subject_progress]
-            }
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get dashboard: {str(e)}") 

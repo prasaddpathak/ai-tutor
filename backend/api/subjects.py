@@ -12,7 +12,7 @@ from datetime import datetime
 
 # Import from backend core modules
 from backend.core.database import db
-from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters
+from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters, generate_paginated_chapter_content
 from backend.models.curriculum import (
     Subject, Topic, Chapter, GenerateTopicsRequest, GenerateChaptersRequest
 )
@@ -211,6 +211,291 @@ async def get_chapters(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get chapters: {str(e)}")
+
+@router.post("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/generate-content")
+async def generate_chapter_content(
+    subject_id: int,
+    topic_title: str,
+    chapter_title: str,
+    student_id: int = Query(..., description="Student ID for user-specific content"),
+    difficulty_level: str = Query(..., description="Difficulty level"),
+    force_regenerate: bool = Query(False, description="Force regenerate content")
+):
+    """Generate paginated content for a specific chapter."""
+    try:
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # First get the chapters to find the chapter description
+        chapters_content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
+        
+        if chapters_content_key not in user_generated_content["chapters"]:
+            raise HTTPException(status_code=404, detail="Chapters not found. Please generate chapters first.")
+        
+        chapters_data = user_generated_content["chapters"][chapters_content_key]
+        target_chapter = None
+        
+        for chapter in chapters_data["chapters"]:
+            if chapter.title == chapter_title:
+                target_chapter = chapter
+                break
+        
+        if not target_chapter:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+        
+        # Create content key for paginated content
+        paginated_content_key = f"{chapters_content_key}_{chapter_title}_paginated"
+        
+        # Check if force regeneration is requested
+        if force_regenerate:
+            if paginated_content_key in user_generated_content.get("paginated_chapters", {}):
+                del user_generated_content["paginated_chapters"][paginated_content_key]
+        
+        # Initialize paginated_chapters if not exists
+        if "paginated_chapters" not in user_generated_content:
+            user_generated_content["paginated_chapters"] = {}
+        
+        # Check if content exists
+        if not force_regenerate and paginated_content_key in user_generated_content["paginated_chapters"]:
+            existing_data = user_generated_content["paginated_chapters"][paginated_content_key]
+            return {
+                "subject": subject_dict,
+                "topic_title": topic_title,
+                "chapter": {
+                    "title": target_chapter.title,
+                    "content": target_chapter.content,
+                    "total_pages": len(existing_data["pages"]),
+                    "estimated_read_time": sum(page.estimated_read_time or 0 for page in existing_data["pages"])
+                },
+                "pages": existing_data["pages"],
+                "is_generated": True,
+                "generated_at": existing_data["generated_at"].isoformat(),
+                "was_force_regenerated": False
+            }
+        
+        # Check if generation is in progress
+        if paginated_content_key in user_generated_content["generation_status"] and user_generated_content["generation_status"][paginated_content_key] == "generating":
+            return {
+                "subject": subject_dict,
+                "topic_title": topic_title,
+                "chapter": {
+                    "title": target_chapter.title,
+                    "content": target_chapter.content
+                },
+                "pages": [],
+                "generating": True,
+                "is_generated": False,
+                "message": "Paginated content is being generated. Please check back in a moment."
+            }
+        
+        # Start generation
+        user_generated_content["generation_status"][paginated_content_key] = "generating"
+        
+        try:
+            # Generate paginated content
+            pages = generate_paginated_chapter_content(
+                target_chapter.title, 
+                target_chapter.content, 
+                difficulty_level
+            )
+            
+            # Store the results
+            generated_at = datetime.now()
+            user_generated_content["paginated_chapters"][paginated_content_key] = {
+                "pages": pages,
+                "generated_at": generated_at
+            }
+            
+            # Clear generation status
+            del user_generated_content["generation_status"][paginated_content_key]
+            
+            return {
+                "subject": subject_dict,
+                "topic_title": topic_title,
+                "chapter": {
+                    "title": target_chapter.title,
+                    "content": target_chapter.content,
+                    "total_pages": len(pages),
+                    "estimated_read_time": sum(page.estimated_read_time or 0 for page in pages)
+                },
+                "pages": pages,
+                "is_generated": True,
+                "generated_at": generated_at.isoformat(),
+                "generating": False,
+                "was_force_regenerated": force_regenerate
+            }
+            
+        except Exception as e:
+            # Clear generation status on error
+            if paginated_content_key in user_generated_content["generation_status"]:
+                del user_generated_content["generation_status"][paginated_content_key]
+            raise e
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate chapter content: {str(e)}")
+
+@router.get("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/pages")
+async def get_chapter_pages(
+    subject_id: int,
+    topic_title: str,
+    chapter_title: str,
+    student_id: int = Query(..., description="Student ID for progress tracking"),
+    difficulty_level: str = Query(..., description="Difficulty level")
+):
+    """Get all pages for a specific chapter with progress tracking (requires content generation first)."""
+    try:
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Check if paginated content exists
+        chapters_content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
+        paginated_content_key = f"{chapters_content_key}_{chapter_title}_paginated"
+        
+        if "paginated_chapters" not in user_generated_content or paginated_content_key not in user_generated_content["paginated_chapters"]:
+            raise HTTPException(status_code=404, detail="Paginated content not found. Please generate chapter content first.")
+        
+        pages_data = user_generated_content["paginated_chapters"][paginated_content_key]
+        
+        # Get page-level progress for this chapter
+        page_progress = db.get_page_progress(
+            student_id=student_id,
+            subject_id=subject_id,
+            topic=topic_title,
+            chapter=chapter_title
+        )
+        
+        # Create a progress map
+        progress_map = {p['page_number']: p for p in page_progress}
+        
+        # Enhance pages with progress data
+        enhanced_pages = []
+        for page in pages_data["pages"]:
+            page_dict = page.dict()
+            page_progress_data = progress_map.get(page.page_number, {})
+            page_dict.update({
+                'progress': {
+                    'completed': page_progress_data.get('completed', False),
+                    'time_spent_minutes': page_progress_data.get('time_spent_minutes', 0),
+                    'last_accessed': page_progress_data.get('updated_at')
+                }
+            })
+            enhanced_pages.append(page_dict)
+        
+        # Get chapter progress summary
+        chapter_summary = db.get_chapter_progress_summary(
+            student_id=student_id,
+            subject_id=subject_id,
+            topic=topic_title,
+            chapter=chapter_title,
+            total_pages_in_chapter=len(pages_data["pages"])  # Pass actual total pages
+        )
+        
+        return {
+            "subject": subject_dict,
+            "topic_title": topic_title,
+            "chapter": {
+                "title": chapter_title,
+                "total_pages": len(pages_data["pages"]),
+                "estimated_read_time": sum(page.estimated_read_time or 0 for page in pages_data["pages"])
+            },
+            "pages": enhanced_pages,
+            "progress_summary": chapter_summary
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get chapter pages: {str(e)}")
+
+@router.get("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/pages/{page_number}")
+async def get_specific_page(
+    subject_id: int,
+    topic_title: str,
+    chapter_title: str,
+    page_number: int,
+    student_id: int = Query(..., description="Student ID for progress tracking"),
+    difficulty_level: str = Query(..., description="Difficulty level")
+):
+    """Get a specific page with navigation context (requires content generation first)."""
+    try:
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Check if paginated content exists
+        chapters_content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
+        paginated_content_key = f"{chapters_content_key}_{chapter_title}_paginated"
+        
+        if "paginated_chapters" not in user_generated_content or paginated_content_key not in user_generated_content["paginated_chapters"]:
+            raise HTTPException(status_code=404, detail="Paginated content not found. Please generate chapter content first.")
+        
+        pages_data = user_generated_content["paginated_chapters"][paginated_content_key]
+        
+        # Find the specific page
+        target_page = None
+        for page in pages_data["pages"]:
+            if page.page_number == page_number:
+                target_page = page
+                break
+        
+        if not target_page:
+            raise HTTPException(status_code=404, detail="Page not found")
+        
+        # Get page progress
+        page_progress = db.get_page_progress(
+            student_id=student_id,
+            subject_id=subject_id,
+            topic=topic_title,
+            chapter=chapter_title
+        )
+        
+        current_page_progress = next(
+            (p for p in page_progress if p['page_number'] == page_number),
+            {}
+        )
+        
+        # Determine navigation context
+        page_numbers = sorted([p.page_number for p in pages_data["pages"]])
+        current_index = page_numbers.index(page_number)
+        
+        navigation = {
+            "has_previous": current_index > 0,
+            "has_next": current_index < len(page_numbers) - 1,
+            "previous_page": page_numbers[current_index - 1] if current_index > 0 else None,
+            "next_page": page_numbers[current_index + 1] if current_index < len(page_numbers) - 1 else None,
+            "current_page": page_number,
+            "total_pages": len(page_numbers)
+        }
+        
+        return {
+            "subject": subject_dict,
+            "topic_title": topic_title,
+            "chapter_title": chapter_title,
+            "page": {
+                **target_page.dict(),
+                "progress": {
+                    "completed": current_page_progress.get('completed', False),
+                    "time_spent_minutes": current_page_progress.get('time_spent_minutes', 0),
+                    "last_accessed": current_page_progress.get('updated_at')
+                }
+            },
+            "navigation": navigation
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get page: {str(e)}")
 
 @router.delete("/{subject_id}/topics/content")
 async def clear_topics_content(
