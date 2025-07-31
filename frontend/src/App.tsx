@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './stores/authStore'
 import Navbar from './components/Navigation/Navbar'
 import AuthPage from './pages/Auth/AuthPage'
-import Dashboard from './pages/Dashboard/Dashboard'
 import SubjectsPage from './pages/Subjects/SubjectsPage'
 import TopicsPage from './pages/Topics/TopicsPage'
 import ChaptersPage from './pages/Chapters/ChaptersPage'
@@ -27,7 +26,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/subjects" replace />
   }
   
   return <>{children}</>
@@ -54,22 +53,7 @@ function App() {
         />
         
         {/* Protected Routes */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Dashboard />
-              </motion.div>
-            </ProtectedRoute>
-          } 
-        />
+        <Route path="/" element={<Navigate to="/subjects" replace />} />
         <Route 
           path="/subjects" 
           element={

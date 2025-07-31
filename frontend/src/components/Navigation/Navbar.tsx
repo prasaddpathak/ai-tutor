@@ -50,16 +50,13 @@ const Navbar: React.FC = () => {
   const generateBreadcrumbs = () => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
     const breadcrumbs = [
-      { label: 'Dashboard', path: '/dashboard', icon: <Dashboard fontSize="small" /> }
+      { label: 'Subjects', path: '/subjects', icon: <School fontSize="small" /> }
     ]
 
     if (pathSegments.includes('subjects')) {
-      if (pathSegments.length === 1) {
-        breadcrumbs.push({ label: 'Subjects', path: '/subjects', icon: <School fontSize="small" /> })
-      } else {
+      if (pathSegments.length > 1) {
         // Extract subject info from URL
         const subjectId = pathSegments[1]
-        breadcrumbs.push({ label: 'Subjects', path: '/subjects', icon: <School fontSize="small" /> })
         
         if (pathSegments.includes('topics')) {
           breadcrumbs.push({ label: 'Topics', path: `/subjects/${subjectId}/topics` })
@@ -106,7 +103,7 @@ const Navbar: React.FC = () => {
         >
           <Box
             component={RouterLink}
-            to="/dashboard"
+            to="/subjects"
             sx={{
               display: 'flex',
               alignItems: 'center',

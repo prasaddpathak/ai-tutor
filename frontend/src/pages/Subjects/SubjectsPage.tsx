@@ -11,13 +11,15 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  Paper,
+  Avatar,
 } from '@mui/material'
-import { AutoAwesome, CheckCircle } from '@mui/icons-material'
+import { AutoAwesome, CheckCircle, School, TrendingUp } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from 'react-query'
 
-import { subjectsAPI } from '../../services/api'
+import { subjectsAPI, studentsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 
 const SubjectsPage: React.FC = () => {
@@ -42,6 +44,17 @@ const SubjectsPage: React.FC = () => {
       retry: 1,
       staleTime: 30 * 1000, // 30 seconds
       refetchInterval: 30 * 1000, // Refresh every 30 seconds
+    }
+  )
+
+  // Get student dashboard data for progress overview
+  const { data: dashboardData } = useQuery(
+    ['student-dashboard', student?.id],
+    () => studentsAPI.getDashboard(student!.id).then(res => res.data),
+    {
+      enabled: !!student?.id,
+      retry: 1,
+      staleTime: 60 * 1000, // 1 minute
     }
   )
 
@@ -133,36 +146,72 @@ const SubjectsPage: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Page Header */}
+      {/* Welcome Header with Student Info */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
+        <Paper
+          elevation={2}
+          sx={{
+            p: 3,
+            mb: 4,
+            background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+            color: 'white',
+            borderRadius: 3,
+          }}
+        >
+          <Grid container spacing={3} alignItems="center">
+            <Grid item>
+              <Avatar
+                sx={{
+                  width: 64,
+                  height: 64,
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  fontSize: '1.5rem',
+                }}
+              >
+                <School />
+              </Avatar>
+            </Grid>
+            <Grid item xs>
+              <Typography variant="h4" fontWeight="bold" gutterBottom>
+                Welcome back, {student?.name}!
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
+                Ready to continue your learning journey?
+              </Typography>
+              {dashboardData?.stats?.subjects_started > 0 && (
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Chip
+                    icon={<TrendingUp sx={{ color: 'white !important' }} />}
+                    label={`${dashboardData.stats.subjects_started} subjects started`}
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      color: 'white' 
+                    }}
+                  />
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </Paper>
+      </motion.div>
+
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
         <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography variant="h3" fontWeight="bold" gutterBottom>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
             Choose Your Subject
           </Typography>
           <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
             Select a subject to explore AI-generated curriculum tailored to your level
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-            <Chip
-              label={`Difficulty: ${student?.difficulty_level}`}
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-            {userContent && (
-              <Chip
-                icon={<CheckCircle />}
-                label={`${userContent.generated_topics_count + userContent.generated_chapters_count} items generated`}
-                color="success"
-                variant="outlined"
-                size="small"
-              />
-            )}
-          </Box>
         </Box>
       </motion.div>
 
@@ -182,7 +231,7 @@ const SubjectsPage: React.FC = () => {
               >
                 <Card
                   sx={{
-                    height: '100%',
+                    height: 320, // Fixed height for all cards
                     cursor: 'pointer',
                     transition: 'all 0.3s ease-in-out',
                     '&:hover': {
@@ -190,75 +239,99 @@ const SubjectsPage: React.FC = () => {
                       transform: 'translateY(-4px)',
                     },
                     position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
                   onClick={() => handleSubjectClick(subject.id)}
                 >
-                  <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    {/* Generation Status Indicator */}
-                    {generationStatus && (
-                      <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
-                        <Tooltip title={generationStatus.tooltip}>
-                          <Chip
-                            icon={generationStatus.icon}
-                            label={generationStatus.label}
-                            color={generationStatus.color}
-                            variant="outlined"
-                            size="small"
-                            sx={{ fontSize: '0.7rem' }}
-                          />
-                        </Tooltip>
-                      </Box>
-                    )}
+                  <CardContent sx={{ 
+                    p: 3, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    height: '100%',
+                    justifyContent: 'space-between'
+                  }}>
+                    {/* Top Section - Status and Icon */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                      {/* Generation Status Indicator */}
+                      {generationStatus && (
+                        <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+                          <Tooltip title={generationStatus.tooltip}>
+                            <Chip
+                              icon={generationStatus.icon}
+                              label={generationStatus.label}
+                              color={generationStatus.color}
+                              variant="outlined"
+                              size="small"
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          </Tooltip>
+                        </Box>
+                      )}
 
-                    {/* Subject Icon */}
-                    <Box
-                      sx={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 3,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
-                        fontSize: '2.5rem',
-                        background: `linear-gradient(135deg, ${subjectColors[subject.name] || '#1976d2'}22, ${subjectColors[subject.name] || '#1976d2'}11)`,
-                        border: `2px solid ${subjectColors[subject.name] || '#1976d2'}33`,
-                      }}
-                    >
-                      {subjectIcons[subject.name] || '📖'}
+                      {/* Subject Icon */}
+                      <Box
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          borderRadius: 3,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '2.5rem',
+                          background: `linear-gradient(135deg, ${subjectColors[subject.name] || '#1976d2'}22, ${subjectColors[subject.name] || '#1976d2'}11)`,
+                          border: `2px solid ${subjectColors[subject.name] || '#1976d2'}33`,
+                        }}
+                      >
+                        {subjectIcons[subject.name] || '📖'}
+                      </Box>
                     </Box>
 
-                    {/* Subject Title */}
-                    <Typography variant="h5" fontWeight="bold" gutterBottom>
-                      {subject.name}
-                    </Typography>
+                    {/* Middle Section - Title and Description */}
+                    <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
+                      {/* Subject Title */}
+                      <Typography variant="h5" fontWeight="bold" gutterBottom>
+                        {subject.name}
+                      </Typography>
 
-                    {/* Subject Description */}
-                    <Typography
-                      variant="body2"
-                      color="textSecondary"
-                      sx={{ flexGrow: 1, mb: 3 }}
-                    >
-                      {subject.description}
-                    </Typography>
+                      {/* Subject Description */}
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ 
+                          flexGrow: 1,
+                          mb: 2,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          lineHeight: 1.4
+                        }}
+                      >
+                        {subject.description}
+                      </Typography>
+                    </Box>
 
-                    {/* Action Button */}
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      sx={{
-                        bgcolor: subjectColors[subject.name] || 'primary.main',
-                        '&:hover': {
-                          bgcolor: subjectColors[subject.name] || 'primary.dark',
-                        },
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSubjectClick(subject.id)
-                      }}
-                    >
-                      Explore Topics
-                    </Button>
+                    {/* Bottom Section - Action Button */}
+                    <Box>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        sx={{
+                          bgcolor: subjectColors[subject.name] || 'primary.main',
+                          '&:hover': {
+                            bgcolor: subjectColors[subject.name] || 'primary.dark',
+                          },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSubjectClick(subject.id)
+                        }}
+                      >
+                        Explore Topics
+                      </Button>
+                    </Box>
                   </CardContent>
                 </Card>
               </motion.div>
