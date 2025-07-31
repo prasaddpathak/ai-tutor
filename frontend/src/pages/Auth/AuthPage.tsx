@@ -7,10 +7,6 @@ import {
   Tabs,
   Tab,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Button,
   Alert,
   Fade,
@@ -28,7 +24,6 @@ import { useAuthStore } from '../../stores/authStore'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-  difficulty_level: z.enum(['School', 'High School', 'Intermediate', 'Advanced']),
 })
 
 type RegisterForm = z.infer<typeof registerSchema>
@@ -50,7 +45,6 @@ const AuthPage: React.FC = () => {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
-      difficulty_level: 'School',
     },
   })
 
@@ -104,7 +98,6 @@ const AuthPage: React.FC = () => {
     try {
       const response = await authAPI.register({
         name: data.name,
-        difficulty_level: data.difficulty_level,
         image_data: capturedImage,
       })
 
@@ -264,25 +257,6 @@ const AuthPage: React.FC = () => {
                           )}
                         />
 
-                        <Controller
-                          name="difficulty_level"
-                          control={control}
-                          render={({ field }) => (
-                            <FormControl fullWidth>
-                              <InputLabel>Difficulty Level</InputLabel>
-                              <Select
-                                {...field}
-                                label="Difficulty Level"
-                                disabled={isLoading}
-                              >
-                                <MenuItem value="School">School</MenuItem>
-                                <MenuItem value="High School">High School</MenuItem>
-                                <MenuItem value="Intermediate">Intermediate</MenuItem>
-                                <MenuItem value="Advanced">Advanced</MenuItem>
-                              </Select>
-                            </FormControl>
-                          )}
-                        />
                       </Box>
 
                       <CameraCapture

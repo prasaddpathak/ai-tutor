@@ -10,6 +10,7 @@ class Subject(BaseModel):
     id: int
     name: str
     description: str
+    difficulty_level: Optional[str] = None  # For when subject is retrieved with student-specific difficulty
 
 class Topic(BaseModel):
     title: str
@@ -42,4 +43,17 @@ class UpdateProgressRequest(BaseModel):
     topic: str
     chapter: str
     completed: bool = False
-    quiz_score: Optional[float] = None 
+    quiz_score: Optional[float] = None
+
+class SetSubjectDifficultyRequest(BaseModel):
+    subject_id: int
+    difficulty_level: str = Field(..., description="Difficulty level: Foundation, Intermediate, Advanced, Expert")
+
+class SubjectDifficultyResponse(BaseModel):
+    subject_id: int
+    difficulty_level: str
+    created_at: datetime
+    updated_at: datetime
+
+# Available difficulty levels
+DIFFICULTY_LEVELS = ["Foundation", "Intermediate", "Advanced", "Expert"] 

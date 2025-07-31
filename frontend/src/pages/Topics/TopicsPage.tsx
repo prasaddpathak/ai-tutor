@@ -39,15 +39,14 @@ const TopicsPage: React.FC = () => {
   const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
 
   const { data: topicsData, isLoading, error, refetch } = useQuery(
-    ['topics', subjectId, student?.difficulty_level, student?.id],
+    ['topics', subjectId, student?.id],
     () => subjectsAPI.getTopics(
       parseInt(subjectId!), 
-      student?.difficulty_level || 'School', 
-      false, 
-      student?.id
+      student!.id,
+      false
     ).then(res => res.data),
     {
-      enabled: !!subjectId && !!student,
+      enabled: !!subjectId && !!student?.id,
       retry: 2,
     }
   )
@@ -67,13 +66,12 @@ const TopicsPage: React.FC = () => {
   const regenerateTopicsMutation = useMutation(
     () => subjectsAPI.getTopics(
       parseInt(subjectId!), 
-      student?.difficulty_level || 'School', 
-      true, 
-      student?.id
+      student!.id,
+      true
     ),
     {
       onSuccess: (response) => {
-        queryClient.setQueryData(['topics', subjectId, student?.difficulty_level, student?.id], response.data)
+        queryClient.setQueryData(['topics', subjectId, student?.id], response.data)
         setRegenerateDialogOpen(false)
       },
       onError: (error) => {
@@ -101,9 +99,10 @@ const TopicsPage: React.FC = () => {
   const checkTopicHasChapters = (topicTitle: string) => {
     if (!userContent || !student || !topicsData?.subject) return false
     
-    // Check if chapters exist for this specific topic
-    const chapterKey = `${student.id}_${topicsData.subject.name}_${topicTitle}_${student.difficulty_level}`
-    return userContent.chapters_keys?.includes(chapterKey) || false
+    // Check if chapters exist for this specific topic by looking for any key that contains
+    // the student_id, subject_name, and topic_title pattern
+    const keyPattern = `${student.id}_${topicsData.subject.name}_${topicTitle}_`
+    return userContent.chapters_keys?.some((key: string) => key.startsWith(keyPattern)) || false
   }
 
   const isCurrentlyGenerating = () => {
@@ -205,8 +204,33 @@ const TopicsPage: React.FC = () => {
         </motion.div>
       )}
 
+      {/* Difficulty Required */}
+      {!isLoading && topicsData?.difficulty_required && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card sx={{ mb: 3, p: 3, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom color="warning.main">
+              Difficulty Level Required
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              {topicsData.message}
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/subjects')}
+              sx={{ mt: 1 }}
+            >
+              Back to Subjects
+            </Button>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Topics List */}
-      {!isLoading && topicsData?.topics && topicsData.topics.length > 0 && (
+      {!isLoading && !topicsData?.difficulty_required && topicsData?.topics && topicsData.topics.length > 0 && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {topicsData.topics.map((topic: any, index: number) => {
             const hasChapters = checkTopicHasChapters(topic.title)

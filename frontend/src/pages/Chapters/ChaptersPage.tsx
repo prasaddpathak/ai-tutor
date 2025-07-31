@@ -44,16 +44,15 @@ const ChaptersPage: React.FC = () => {
   const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
 
   const { data: chaptersData, isLoading, error } = useQuery(
-    ['chapters', subjectId, topicTitle, student?.difficulty_level, student?.id],
+    ['chapters', subjectId, topicTitle, student?.id],
     () => subjectsAPI.getChapters(
       parseInt(subjectId!), 
       decodeURIComponent(topicTitle!), 
-      student?.difficulty_level || 'School',
-      false,
-      student?.id
+      student!.id,
+      false
     ).then(res => res.data),
     {
-      enabled: !!subjectId && !!topicTitle && !!student,
+      enabled: !!subjectId && !!topicTitle && !!student?.id,
       retry: 2,
     }
   )
@@ -62,13 +61,12 @@ const ChaptersPage: React.FC = () => {
     () => subjectsAPI.getChapters(
       parseInt(subjectId!), 
       decodeURIComponent(topicTitle!), 
-      student?.difficulty_level || 'School',
-      true,
-      student?.id
+      student!.id,
+      true
     ),
     {
       onSuccess: (response) => {
-        queryClient.setQueryData(['chapters', subjectId, topicTitle, student?.difficulty_level, student?.id], response.data)
+        queryClient.setQueryData(['chapters', subjectId, topicTitle, student?.id], response.data)
         setRegenerateDialogOpen(false)
         setSelectedChapter(null) // Reset selected chapter
       },
@@ -159,6 +157,31 @@ const ChaptersPage: React.FC = () => {
           </Typography>
         </Box>
       </motion.div>
+
+      {/* Difficulty Required */}
+      {!isLoading && chaptersData?.difficulty_required && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card sx={{ mb: 3, p: 3, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom color="warning.main">
+              Difficulty Level Required
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              {chaptersData.message}
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/subjects')}
+              sx={{ mt: 1 }}
+            >
+              Back to Subjects
+            </Button>
+          </Card>
+        </motion.div>
+      )}
 
       <Grid container spacing={3}>
         {/* Chapters Navigation */}

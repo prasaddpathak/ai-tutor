@@ -50,16 +50,10 @@ def decode_base64_image(base64_string: str) -> np.ndarray:
 @router.post("/register", response_model=AuthResponse)
 async def register_student(
     name: str = Form(...),
-    difficulty_level: str = Form(...),
     image_data: str = Form(..., description="Base64 encoded image data")
 ):
     """Register a new student with face recognition."""
     try:
-        # Validate difficulty level
-        valid_levels = ["School", "High School", "Intermediate", "Advanced"]
-        if difficulty_level not in valid_levels:
-            raise HTTPException(status_code=400, detail=f"Invalid difficulty level. Must be one of: {valid_levels}")
-        
         # Check if student already exists
         existing_student = db.get_student_by_name(name)
         if existing_student:
@@ -71,8 +65,8 @@ async def register_student(
         # Register face
         register_face(name, frame)
         
-        # Create student in database
-        student_id = db.create_student(name, difficulty_level)
+        # Create student in database (no difficulty level needed)
+        student_id = db.create_student(name)
         student = db.get_student_by_name(name)
         
         return AuthResponse(

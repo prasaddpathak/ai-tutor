@@ -26,14 +26,19 @@ class DatabaseManager:
         return conn
     
     def init_database(self):
-        """Initialize database with required tables."""
+        """Initialize database with required tables. Drops and recreates all tables for clean state."""
         with self.get_connection() as conn:
-            # Students table
+            # Drop all existing tables for clean state (no migrations needed in early development)
+            conn.execute('DROP TABLE IF EXISTS student_progress')
+            conn.execute('DROP TABLE IF EXISTS student_subject_difficulty') 
+            conn.execute('DROP TABLE IF EXISTS subjects')
+            conn.execute('DROP TABLE IF EXISTS students')
+            
+            # Students table (clean, no difficulty_level)
             conn.execute('''
-                CREATE TABLE IF NOT EXISTS students (
+                CREATE TABLE students (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT UNIQUE NOT NULL,
-                    difficulty_level TEXT NOT NULL CHECK (difficulty_level IN ('School', 'High School', 'Intermediate', 'Advanced')),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -41,16 +46,31 @@ class DatabaseManager:
             
             # Subjects table
             conn.execute('''
-                CREATE TABLE IF NOT EXISTS subjects (
+                CREATE TABLE subjects (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT UNIQUE NOT NULL,
                     description TEXT
                 )
             ''')
             
+            # Student-Subject difficulty mapping
+            conn.execute('''
+                CREATE TABLE student_subject_difficulty (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    subject_id INTEGER NOT NULL,
+                    difficulty_level TEXT NOT NULL CHECK (difficulty_level IN ('Foundation', 'Intermediate', 'Advanced', 'Expert')),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(student_id, subject_id),
+                    FOREIGN KEY (student_id) REFERENCES students (id),
+                    FOREIGN KEY (subject_id) REFERENCES subjects (id)
+                )
+            ''')
+            
             # Student progress table
             conn.execute('''
-                CREATE TABLE IF NOT EXISTS student_progress (
+                CREATE TABLE student_progress (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     student_id INTEGER NOT NULL,
                     subject_id INTEGER NOT NULL,
@@ -85,12 +105,12 @@ class DatabaseManager:
                 (name, description)
             )
     
-    def create_student(self, name: str, difficulty_level: str) -> int:
+    def create_student(self, name: str) -> int:
         """Create a new student profile."""
         with self.get_connection() as conn:
             cursor = conn.execute(
-                'INSERT INTO students (name, difficulty_level) VALUES (?, ?)',
-                (name, difficulty_level)
+                'INSERT INTO students (name) VALUES (?)',
+                (name,)
             )
             return cursor.lastrowid
     
@@ -146,6 +166,46 @@ class DatabaseManager:
                     WHERE sp.student_id = ?
                     ORDER BY sp.created_at
                 ''', (student_id,)).fetchall()
+            return [dict(row) for row in rows]
+    
+    def set_student_subject_difficulty(self, student_id: int, subject_id: int, difficulty_level: str):
+        """Set difficulty level for a student's subject."""
+        with self.get_connection() as conn:
+            conn.execute('''
+                INSERT OR REPLACE INTO student_subject_difficulty 
+                (student_id, subject_id, difficulty_level, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (student_id, subject_id, difficulty_level))
+    
+    def get_student_subject_difficulty(self, student_id: int, subject_id: int) -> Optional[str]:
+        """Get difficulty level for a student's subject."""
+        with self.get_connection() as conn:
+            row = conn.execute('''
+                SELECT difficulty_level FROM student_subject_difficulty
+                WHERE student_id = ? AND subject_id = ?
+            ''', (student_id, subject_id)).fetchone()
+            return row['difficulty_level'] if row else None
+    
+    def get_student_subject_difficulties(self, student_id: int) -> Dict[int, str]:
+        """Get all subject difficulty levels for a student."""
+        with self.get_connection() as conn:
+            rows = conn.execute('''
+                SELECT subject_id, difficulty_level 
+                FROM student_subject_difficulty
+                WHERE student_id = ?
+            ''', (student_id,)).fetchall()
+            return {row['subject_id']: row['difficulty_level'] for row in rows}
+    
+    def get_subjects_with_difficulty(self, student_id: int) -> List[Dict]:
+        """Get all subjects with their difficulty levels for a student."""
+        with self.get_connection() as conn:
+            rows = conn.execute('''
+                SELECT s.*, ssd.difficulty_level
+                FROM subjects s
+                LEFT JOIN student_subject_difficulty ssd 
+                    ON s.id = ssd.subject_id AND ssd.student_id = ?
+                ORDER BY s.name
+            ''', (student_id,)).fetchall()
             return [dict(row) for row in rows]
 
 # Global database instance

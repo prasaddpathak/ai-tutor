@@ -21,15 +21,19 @@ import { useQuery } from 'react-query'
 
 import { subjectsAPI, studentsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import DifficultySelectionModal from '../../components/DifficultySelection/DifficultySelectionModal'
 
 const SubjectsPage: React.FC = () => {
   const navigate = useNavigate()
   const student = useAuthStore((state) => state.student)
+  const [difficultyModalOpen, setDifficultyModalOpen] = React.useState(false)
+  const [selectedSubject, setSelectedSubject] = React.useState<{id: number, name: string} | null>(null)
 
   const { data: subjects, isLoading, error } = useQuery(
-    'subjects',
-    () => subjectsAPI.getAll().then(res => res.data),
+    ['subjects', student?.id],
+    () => subjectsAPI.getAll(student?.id).then(res => res.data),
     {
+      enabled: !!student?.id,
       retry: 2,
       staleTime: 5 * 60 * 1000, // 5 minutes
     }
@@ -58,8 +62,28 @@ const SubjectsPage: React.FC = () => {
     }
   )
 
-  const handleSubjectClick = (subjectId: number) => {
-    navigate(`/subjects/${subjectId}/topics`)
+  const handleSubjectClick = (subject: any) => {
+    // Check if difficulty is already set for this subject
+    if (subject.difficulty_level) {
+      // Difficulty already set, navigate directly
+      navigate(`/subjects/${subject.id}/topics`)
+    } else {
+      // Need to set difficulty first
+      setSelectedSubject({ id: subject.id, name: subject.name })
+      setDifficultyModalOpen(true)
+    }
+  }
+
+  const handleDifficultySet = (difficulty: string) => {
+    if (selectedSubject) {
+      // Navigate to topics after difficulty is set
+      navigate(`/subjects/${selectedSubject.id}/topics`)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setDifficultyModalOpen(false)
+    setSelectedSubject(null)
   }
 
   const getSubjectGenerationStatus = (subjectName: string) => {
@@ -242,7 +266,7 @@ const SubjectsPage: React.FC = () => {
                     display: 'flex',
                     flexDirection: 'column',
                   }}
-                  onClick={() => handleSubjectClick(subject.id)}
+                  onClick={() => handleSubjectClick(subject)}
                 >
                   <CardContent sx={{ 
                     p: 3, 
@@ -253,21 +277,37 @@ const SubjectsPage: React.FC = () => {
                   }}>
                     {/* Top Section - Status and Icon */}
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-                      {/* Generation Status Indicator */}
-                      {generationStatus && (
-                        <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
-                          <Tooltip title={generationStatus.tooltip}>
-                            <Chip
-                              icon={generationStatus.icon}
-                              label={generationStatus.label}
-                              color={generationStatus.color}
-                              variant="outlined"
-                              size="small"
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                          </Tooltip>
-                        </Box>
-                      )}
+                      {/* Generation Status and Difficulty Level Indicators */}
+                      <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        {/* Difficulty Level Indicator */}
+                        {subject.difficulty_level && (
+                          <Chip
+                            label={subject.difficulty_level}
+                            size="small"
+                            sx={{
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              bgcolor: subject.difficulty_level === 'Foundation' ? '#4caf50' :
+                                      subject.difficulty_level === 'Intermediate' ? '#ff9800' :
+                                      subject.difficulty_level === 'Advanced' ? '#f44336' :
+                                      subject.difficulty_level === 'Expert' ? '#9c27b0' : 'primary.main',
+                              color: 'white'
+                            }}
+                          />
+                        )}
+                        
+                        {/* Generation Status Indicator */}
+                        {generationStatus && (
+                          <Chip
+                            icon={generationStatus.icon}
+                            label={generationStatus.label}
+                            color={generationStatus.color}
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontSize: '0.7rem' }}
+                          />
+                        )}
+                      </Box>
 
                       {/* Subject Icon */}
                       <Box
@@ -326,10 +366,10 @@ const SubjectsPage: React.FC = () => {
                         }}
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleSubjectClick(subject.id)
+                          handleSubjectClick(subject)
                         }}
                       >
-                        Explore Topics
+                        {subject.difficulty_level ? 'Explore Topics' : 'Choose Difficulty'}
                       </Button>
                     </Box>
                   </CardContent>
@@ -356,6 +396,18 @@ const SubjectsPage: React.FC = () => {
             </Typography>
           </Box>
         </motion.div>
+      )}
+
+      {/* Difficulty Selection Modal */}
+      {selectedSubject && (
+        <DifficultySelectionModal
+          open={difficultyModalOpen}
+          onClose={handleCloseModal}
+          subjectId={selectedSubject.id}
+          subjectName={selectedSubject.name}
+          studentId={student!.id}
+          onDifficultySet={handleDifficultySet}
+        />
       )}
     </Container>
   )

@@ -74,15 +74,6 @@ const Navbar: React.FC = () => {
 
   const breadcrumbs = generateBreadcrumbs()
 
-  const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'School': return 'success'
-      case 'High School': return 'info'
-      case 'Intermediate': return 'warning'
-      case 'Advanced': return 'error'
-      default: return 'default'
-    }
-  }
 
   return (
     <AppBar
@@ -168,20 +159,8 @@ const Navbar: React.FC = () => {
 
         {/* User Profile Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Difficulty Level Chip */}
-          <Chip
-            label={student?.difficulty_level}
-            size="small"
-            color={getDifficultyColor(student?.difficulty_level || '')}
-            variant="outlined"
-            sx={{ fontWeight: 600 }}
-          />
-
           {/* User Menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" color="textSecondary">
-              Welcome,
-            </Typography>
             <Button
               onClick={handleMenuOpen}
               startIcon={

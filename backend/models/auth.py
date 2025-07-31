@@ -8,7 +8,6 @@ from datetime import datetime
 
 class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Student name")
-    difficulty_level: str = Field(..., description="Difficulty level: School, High School, Intermediate, Advanced")
 
 class LoginRequest(BaseModel):
     pass  # Face authentication doesn't need request body
@@ -16,7 +15,6 @@ class LoginRequest(BaseModel):
 class StudentResponse(BaseModel):
     id: int
     name: str
-    difficulty_level: str
     created_at: datetime
     last_login: datetime
 

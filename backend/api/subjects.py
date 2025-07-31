@@ -14,7 +14,8 @@ from datetime import datetime
 from backend.core.database import db
 from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters
 from backend.models.curriculum import (
-    Subject, Topic, Chapter, GenerateTopicsRequest, GenerateChaptersRequest
+    Subject, Topic, Chapter, GenerateTopicsRequest, GenerateChaptersRequest,
+    SetSubjectDifficultyRequest, SubjectDifficultyResponse, DIFFICULTY_LEVELS
 )
 
 router = APIRouter()
@@ -33,19 +34,89 @@ def get_user_content_key(student_id: int, subject_name: str, difficulty_level: s
     return f"{student_id}_{subject_name}_{difficulty_level}"
 
 @router.get("/", response_model=List[Subject])
-async def get_all_subjects():
-    """Get all available subjects."""
+async def get_all_subjects(student_id: int = Query(None, description="Student ID to include difficulty levels")):
+    """Get all available subjects, optionally with student-specific difficulty levels."""
     try:
-        subjects = db.get_all_subjects()
+        if student_id:
+            subjects = db.get_subjects_with_difficulty(student_id)
+        else:
+            subjects = db.get_all_subjects()
         return [Subject(**subject) for subject in subjects]
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get subjects: {str(e)}")
 
+@router.post("/difficulty")
+async def set_subject_difficulty(
+    student_id: int = Query(..., description="Student ID"),
+    request: SetSubjectDifficultyRequest = None
+):
+    """Set difficulty level for a student's subject."""
+    try:
+        # Validate difficulty level
+        if request.difficulty_level not in DIFFICULTY_LEVELS:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid difficulty level. Must be one of: {DIFFICULTY_LEVELS}"
+            )
+        
+        # Set the difficulty level
+        db.set_student_subject_difficulty(student_id, request.subject_id, request.difficulty_level)
+        
+        return {
+            "success": True,
+            "message": f"Difficulty level set to {request.difficulty_level}",
+            "student_id": student_id,
+            "subject_id": request.subject_id,
+            "difficulty_level": request.difficulty_level
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set difficulty: {str(e)}")
+
+@router.get("/difficulty/{subject_id}")
+async def get_subject_difficulty(
+    subject_id: int,
+    student_id: int = Query(..., description="Student ID")
+):
+    """Get difficulty level for a student's subject."""
+    try:
+        difficulty = db.get_student_subject_difficulty(student_id, subject_id)
+        
+        if not difficulty:
+            return {
+                "student_id": student_id,
+                "subject_id": subject_id,
+                "difficulty_level": None,
+                "is_set": False
+            }
+        
+        return {
+            "student_id": student_id,
+            "subject_id": subject_id,
+            "difficulty_level": difficulty,
+            "is_set": True
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get difficulty: {str(e)}")
+
+@router.get("/difficulty-levels")
+async def get_difficulty_levels():
+    """Get all available difficulty levels."""
+    return {
+        "levels": DIFFICULTY_LEVELS,
+        "descriptions": {
+            "Foundation": "Basic concepts, perfect for beginners",
+            "Intermediate": "Building on fundamentals, moderate complexity",
+            "Advanced": "Complex topics, requires solid background",
+            "Expert": "Professional/academic level, most challenging"
+        }
+    }
+
 @router.get("/{subject_id}/topics")
 async def get_topics(
     subject_id: int, 
-    difficulty_level: str,
     student_id: int = Query(..., description="Student ID for user-specific content"),
     force_regenerate: bool = Query(False, description="Force regenerate content")
 ):
@@ -58,6 +129,20 @@ async def get_topics(
                 raise HTTPException(status_code=404, detail="Subject not found")
         
         subject_dict = dict(subject)
+        
+        # Get difficulty level for this student-subject combination
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            return {
+                "subject": subject_dict,
+                "topics": [],
+                "generating": False,
+                "is_generated": False,
+                "difficulty_required": True,
+                "message": "Please select a difficulty level for this subject first.",
+                "available_levels": DIFFICULTY_LEVELS
+            }
+        
         content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level)
         
         # Check if force regeneration is requested
@@ -129,7 +214,6 @@ async def get_topics(
 async def get_chapters(
     subject_id: int, 
     topic_title: str, 
-    difficulty_level: str,
     student_id: int = Query(..., description="Student ID for user-specific content"),
     force_regenerate: bool = Query(False, description="Force regenerate content")
 ):
@@ -142,6 +226,21 @@ async def get_chapters(
                 raise HTTPException(status_code=404, detail="Subject not found")
         
         subject_dict = dict(subject)
+        
+        # Get difficulty level for this student-subject combination
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            return {
+                "subject": subject_dict,
+                "topic_title": topic_title,
+                "chapters": [],
+                "generating": False,
+                "is_generated": False,
+                "difficulty_required": True,
+                "message": "Please select a difficulty level for this subject first.",
+                "available_levels": DIFFICULTY_LEVELS
+            }
+        
         content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
         
         # Check if force regeneration is requested
@@ -215,7 +314,6 @@ async def get_chapters(
 @router.delete("/{subject_id}/topics/content")
 async def clear_topics_content(
     subject_id: int, 
-    difficulty_level: str,
     student_id: int = Query(..., description="Student ID for user-specific content")
 ):
     """Clear generated topics for a subject for a specific student."""
@@ -227,6 +325,12 @@ async def clear_topics_content(
                 raise HTTPException(status_code=404, detail="Subject not found")
         
         subject_dict = dict(subject)
+        
+        # Get difficulty level for this student-subject combination
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="No difficulty level set for this subject")
+        
         content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level)
         
         # Clear content
@@ -244,7 +348,6 @@ async def clear_topics_content(
 async def clear_chapters_content(
     subject_id: int, 
     topic_title: str, 
-    difficulty_level: str,
     student_id: int = Query(..., description="Student ID for user-specific content")
 ):
     """Clear generated chapters for a topic for a specific student."""
@@ -256,6 +359,12 @@ async def clear_chapters_content(
                 raise HTTPException(status_code=404, detail="Subject not found")
         
         subject_dict = dict(subject)
+        
+        # Get difficulty level for this student-subject combination
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="No difficulty level set for this subject")
+        
         content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
         
         # Clear content

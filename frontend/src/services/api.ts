@@ -49,7 +49,6 @@ export interface AuthResponse {
   student?: {
     id: number
     name: string
-    difficulty_level: string
     created_at: string
     last_login: string
   }
@@ -60,6 +59,7 @@ export interface Subject {
   id: number
   name: string
   description: string
+  difficulty_level?: string  // Optional because it's only present when fetched with student context
 }
 
 export interface Topic {
@@ -80,10 +80,9 @@ export interface CameraInfo {
 
 // Auth API
 export const authAPI = {
-  register: (data: { name: string; difficulty_level: string; image_data: string }) => {
+  register: (data: { name: string; image_data: string }) => {
     const formData = new FormData()
     formData.append('name', data.name)
-    formData.append('difficulty_level', data.difficulty_level)
     formData.append('image_data', data.image_data)
     
     return api.post<AuthResponse>('/auth/register', formData, {
@@ -112,21 +111,21 @@ export const cameraAPI = {
 
 // Subjects API
 export const subjectsAPI = {
-  getAll: () => api.get<Subject[]>('/subjects/'),
+  getAll: (studentId?: number) => api.get<Subject[]>('/subjects/', {
+    params: studentId ? { student_id: studentId } : {}
+  }),
   
-  getTopics: (subjectId: number, difficultyLevel: string, forceRegenerate?: boolean, studentId?: number) =>
+  getTopics: (subjectId: number, studentId: number, forceRegenerate?: boolean) =>
     api.get(`/subjects/${subjectId}/topics`, {
       params: { 
-        difficulty_level: difficultyLevel,
         student_id: studentId,
         ...(forceRegenerate && { force_regenerate: forceRegenerate })
       }
     }),
   
-  getChapters: (subjectId: number, topicTitle: string, difficultyLevel: string, forceRegenerate?: boolean, studentId?: number) =>
+  getChapters: (subjectId: number, topicTitle: string, studentId: number, forceRegenerate?: boolean) =>
     api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters`, {
       params: { 
-        difficulty_level: difficultyLevel,
         student_id: studentId,
         ...(forceRegenerate && { force_regenerate: forceRegenerate })
       }
@@ -141,21 +140,33 @@ export const subjectsAPI = {
   getGenerationStatus: (contentKey: string) =>
     api.get(`/subjects/generation-status/${contentKey}`),
   
-  clearTopicsContent: (subjectId: number, difficultyLevel: string, studentId: number) =>
+  clearTopicsContent: (subjectId: number, studentId: number) =>
     api.delete(`/subjects/${subjectId}/topics/content`, {
       params: { 
-        difficulty_level: difficultyLevel,
         student_id: studentId
       }
     }),
   
-  clearChaptersContent: (subjectId: number, topicTitle: string, difficultyLevel: string, studentId: number) =>
+  clearChaptersContent: (subjectId: number, topicTitle: string, studentId: number) =>
     api.delete(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/content`, {
       params: { 
-        difficulty_level: difficultyLevel,
         student_id: studentId
       }
     }),
+
+  // Subject difficulty management
+  setSubjectDifficulty: (studentId: number, subjectId: number, difficultyLevel: string) =>
+    api.post('/subjects/difficulty', 
+      { subject_id: subjectId, difficulty_level: difficultyLevel },
+      { params: { student_id: studentId } }
+    ),
+
+  getSubjectDifficulty: (studentId: number, subjectId: number) =>
+    api.get(`/subjects/difficulty/${subjectId}`, {
+      params: { student_id: studentId }
+    }),
+
+  getDifficultyLevels: () => api.get('/subjects/difficulty-levels'),
   
   getUserGeneratedContent: (studentId: number) => 
     api.get(`/subjects/user/${studentId}/generated-content`)

@@ -4,7 +4,6 @@ import { persist } from 'zustand/middleware'
 export interface Student {
   id: number
   name: string
-  difficulty_level: 'School' | 'High School' | 'Intermediate' | 'Advanced'
   created_at: string
   last_login: string
 }
