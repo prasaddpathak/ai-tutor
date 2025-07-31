@@ -30,6 +30,7 @@ class DatabaseManager:
         with self.get_connection() as conn:
             # Drop all existing tables for clean state (no migrations needed in early development)
             conn.execute('DROP TABLE IF EXISTS student_progress')
+            conn.execute('DROP TABLE IF EXISTS student_subject_preferences')
             conn.execute('DROP TABLE IF EXISTS student_subject_difficulty') 
             conn.execute('DROP TABLE IF EXISTS subjects')
             conn.execute('DROP TABLE IF EXISTS students')
@@ -79,6 +80,21 @@ class DatabaseManager:
                     completed BOOLEAN DEFAULT FALSE,
                     quiz_score REAL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (student_id) REFERENCES students (id),
+                    FOREIGN KEY (subject_id) REFERENCES subjects (id)
+                )
+            ''')
+            
+            # Student subject preferences table (for AI-generated custom subjects)
+            conn.execute('''
+                CREATE TABLE student_subject_preferences (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    subject_id INTEGER NOT NULL,
+                    original_request TEXT NOT NULL,
+                    ai_generated_description TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(student_id, subject_id),
                     FOREIGN KEY (student_id) REFERENCES students (id),
                     FOREIGN KEY (subject_id) REFERENCES subjects (id)
                 )
@@ -200,13 +216,45 @@ class DatabaseManager:
         """Get all subjects with their difficulty levels for a student."""
         with self.get_connection() as conn:
             rows = conn.execute('''
-                SELECT s.*, ssd.difficulty_level
+                SELECT s.*, ssd.difficulty_level, ssp.original_request, ssp.ai_generated_description
                 FROM subjects s
                 LEFT JOIN student_subject_difficulty ssd 
                     ON s.id = ssd.subject_id AND ssd.student_id = ?
+                LEFT JOIN student_subject_preferences ssp
+                    ON s.id = ssp.subject_id AND ssp.student_id = ?
                 ORDER BY s.name
-            ''', (student_id,)).fetchall()
+            ''', (student_id, student_id)).fetchall()
             return [dict(row) for row in rows]
+    
+    def create_custom_subject(self, student_id: int, name: str, description: str, 
+                             original_request: str, ai_generated_description: str = None) -> int:
+        """Create a custom subject for a student with their original request."""
+        with self.get_connection() as conn:
+            # First create the subject
+            cursor = conn.execute(
+                'INSERT INTO subjects (name, description) VALUES (?, ?)',
+                (name, description)
+            )
+            subject_id = cursor.lastrowid
+            
+            # Then store the student's original request and AI description
+            conn.execute('''
+                INSERT INTO student_subject_preferences 
+                (student_id, subject_id, original_request, ai_generated_description)
+                VALUES (?, ?, ?, ?)
+            ''', (student_id, subject_id, original_request, ai_generated_description))
+            
+            return subject_id
+    
+    def get_student_subject_preference(self, student_id: int, subject_id: int) -> Optional[Dict]:
+        """Get student's original request and AI description for a subject."""
+        with self.get_connection() as conn:
+            row = conn.execute('''
+                SELECT original_request, ai_generated_description, created_at
+                FROM student_subject_preferences
+                WHERE student_id = ? AND subject_id = ?
+            ''', (student_id, subject_id)).fetchone()
+            return dict(row) if row else None
 
 # Global database instance
 db = DatabaseManager()

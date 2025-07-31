@@ -2,11 +2,11 @@
 # app/curriculum/curriculum_service.py
 
 from backend.core.curriculum.llm_client import query_llm
-from backend.core.curriculum.prompts import get_topics_prompt, get_chapters_prompt
+from backend.core.curriculum.prompts import get_topics_prompt, get_chapters_prompt, get_subject_recommendations_prompt
 from backend.models.curriculum import Topic, Chapter
 import json
 import re
-from typing import List
+from typing import List, Dict
 
 def _clean_markdown_text(text: str) -> str:
     """Clean up markdown formatting from text."""
@@ -148,9 +148,9 @@ def _fallback_parse_list_to_chapters(text: str) -> List[Chapter]:
     
     return chapters
 
-def generate_topics(subject: str, level: str) -> List[Topic]:
-    """Generates a list of Topic objects for a given subject and level."""
-    prompt = get_topics_prompt(subject, level)
+def generate_topics(subject: str, level: str, user_context: str = None) -> List[Topic]:
+    """Generates a list of Topic objects for a given subject and level, optionally considering user context."""
+    prompt = get_topics_prompt(subject, level, user_context)
     response = query_llm(prompt)
     return _parse_topics_response(response)
 
@@ -159,3 +159,46 @@ def generate_chapters(topic: str, level: str) -> List[Chapter]:
     prompt = get_chapters_prompt(topic, level)
     response = query_llm(prompt)
     return _parse_chapters_response(response)
+
+def _parse_subject_recommendations_response(response: str) -> List[Dict]:
+    """Parse LLM response into subject recommendation objects."""
+    try:
+        # Extract JSON from response
+        json_content = _extract_json_from_response(response)
+        
+        # Parse JSON
+        subjects_data = json.loads(json_content)
+        
+        if not isinstance(subjects_data, list):
+            raise ValueError("Expected JSON array of subject recommendations")
+        
+        subjects = []
+        for item in subjects_data:
+            if isinstance(item, dict) and 'name' in item and 'description' in item:
+                name = _clean_markdown_text(item.get('name', ''))
+                description = _clean_markdown_text(item.get('description', ''))
+                relevance_explanation = _clean_markdown_text(item.get('relevance_explanation', ''))
+                
+                if name and description:  # Only add if required fields are not empty
+                    subjects.append({
+                        'name': name,
+                        'description': description,
+                        'relevance_explanation': relevance_explanation
+                    })
+        
+        return subjects
+        
+    except (json.JSONDecodeError, ValueError, KeyError) as e:
+        print(f"Subject recommendations JSON parsing failed: {e}")
+        # Return a fallback response
+        return [{
+            'name': 'General Studies',
+            'description': 'A broad introduction to the topic you requested, covering fundamental concepts and practical applications.',
+            'relevance_explanation': 'This subject provides a comprehensive foundation for your learning interests.'
+        }]
+
+def generate_subject_recommendations(user_request: str) -> List[Dict]:
+    """Generates AI-recommended subjects based on user's natural language request."""
+    prompt = get_subject_recommendations_prompt(user_request)
+    response = query_llm(prompt)
+    return _parse_subject_recommendations_response(response)

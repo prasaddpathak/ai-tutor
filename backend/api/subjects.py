@@ -4,6 +4,7 @@ Handles curriculum management and LLM content generation
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
+from pydantic import BaseModel
 from typing import List, Dict
 import sys
 from pathlib import Path
@@ -12,7 +13,7 @@ from datetime import datetime
 
 # Import from backend core modules
 from backend.core.database import db
-from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters
+from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters, generate_subject_recommendations
 from backend.models.curriculum import (
     Subject, Topic, Chapter, GenerateTopicsRequest, GenerateChaptersRequest,
     SetSubjectDifficultyRequest, SubjectDifficultyResponse, DIFFICULTY_LEVELS
@@ -179,8 +180,12 @@ async def get_topics(
         user_generated_content["generation_status"][content_key] = "generating"
         
         try:
-            # Generate topics using improved curriculum service
-            topics = generate_topics(subject_dict['name'], difficulty_level)
+            # Check if this subject has user preferences (original request)
+            user_preference = db.get_student_subject_preference(student_id, subject_id)
+            user_context = user_preference['original_request'] if user_preference else None
+            
+            # Generate topics using improved curriculum service with user context
+            topics = generate_topics(subject_dict['name'], difficulty_level, user_context)
             
             # Store the results for this user
             generated_at = datetime.now()
@@ -446,4 +451,97 @@ async def get_generation_status(content_key: str):
         "is_generating": status == "generating",
         "is_completed": status == "completed",
         "is_error": status.startswith("error:") if isinstance(status, str) else False
-    } 
+    }
+
+class RecommendSubjectsRequest(BaseModel):
+    user_request: str
+
+@router.post("/recommend")
+async def recommend_subjects(
+    request: RecommendSubjectsRequest,
+    student_id: int = Query(..., description="Student ID")
+):
+    """Get AI-generated subject recommendations based on user's natural language request."""
+    try:
+        if not request.user_request or len(request.user_request.strip()) < 5:
+            raise HTTPException(
+                status_code=400, 
+                detail="Please provide a meaningful description of what you want to learn (at least 5 characters)"
+            )
+        
+        # Generate subject recommendations using AI
+        recommendations = generate_subject_recommendations(request.user_request.strip())
+        
+        return {
+            "user_request": request.user_request.strip(),
+            "student_id": student_id,
+            "recommendations": recommendations,
+            "count": len(recommendations),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate recommendations: {str(e)}")
+
+class CreateCustomSubjectRequest(BaseModel):
+    subject_name: str
+    subject_description: str
+    original_request: str
+    ai_generated_description: str = None
+
+@router.post("/create-custom")
+async def create_custom_subject(
+    request: CreateCustomSubjectRequest,
+    student_id: int = Query(..., description="Student ID")
+):
+    """Create a custom subject based on user's request and AI recommendations."""
+    try:
+        if not request.subject_name or len(request.subject_name.strip()) < 2:
+            raise HTTPException(
+                status_code=400, 
+                detail="Subject name must be at least 2 characters long"
+            )
+        
+        if not request.subject_description or len(request.subject_description.strip()) < 10:
+            raise HTTPException(
+                status_code=400, 
+                detail="Subject description must be at least 10 characters long"
+            )
+        
+        if not request.original_request or len(request.original_request.strip()) < 5:
+            raise HTTPException(
+                status_code=400, 
+                detail="Original request must be at least 5 characters long"
+            )
+        
+        # Check if subject with same name already exists
+        existing_subjects = db.get_all_subjects()
+        for subject in existing_subjects:
+            if subject['name'].lower() == request.subject_name.strip().lower():
+                raise HTTPException(
+                    status_code=409, 
+                    detail=f"A subject with the name '{request.subject_name.strip()}' already exists"
+                )
+        
+        # Create the custom subject
+        subject_id = db.create_custom_subject(
+            student_id=student_id,
+            name=request.subject_name.strip(),
+            description=request.subject_description.strip(),
+            original_request=request.original_request.strip(),
+            ai_generated_description=request.ai_generated_description.strip() if request.ai_generated_description else None
+        )
+        
+        return {
+            "success": True,
+            "message": f"Custom subject '{request.subject_name.strip()}' created successfully",
+            "subject_id": subject_id,
+            "student_id": student_id,
+            "original_request": request.original_request.strip(),
+            "created_at": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create custom subject: {str(e)}") 

@@ -169,7 +169,25 @@ export const subjectsAPI = {
   getDifficultyLevels: () => api.get('/subjects/difficulty-levels'),
   
   getUserGeneratedContent: (studentId: number) => 
-    api.get(`/subjects/user/${studentId}/generated-content`)
+    api.get(`/subjects/user/${studentId}/generated-content`),
+
+  // AI subject recommendations
+  getSubjectRecommendations: (studentId: number, userRequest: string) =>
+    api.post('/subjects/recommend', 
+      { user_request: userRequest },
+      { params: { student_id: studentId } }
+    ),
+
+  createCustomSubject: (studentId: number, subjectName: string, subjectDescription: string, originalRequest: string, aiGeneratedDescription?: string) =>
+    api.post('/subjects/create-custom', 
+      {
+        subject_name: subjectName,
+        subject_description: subjectDescription,
+        original_request: originalRequest,
+        ...(aiGeneratedDescription && { ai_generated_description: aiGeneratedDescription })
+      },
+      { params: { student_id: studentId } }
+    )
 }
 
 // Students API

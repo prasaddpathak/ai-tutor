@@ -22,12 +22,14 @@ import { useQuery } from 'react-query'
 import { subjectsAPI, studentsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import DifficultySelectionModal from '../../components/DifficultySelection/DifficultySelectionModal'
+import AddSubjectModal from '../../components/SubjectCreation/AddSubjectModal'
 
 const SubjectsPage: React.FC = () => {
   const navigate = useNavigate()
   const student = useAuthStore((state) => state.student)
   const [difficultyModalOpen, setDifficultyModalOpen] = React.useState(false)
   const [selectedSubject, setSelectedSubject] = React.useState<{id: number, name: string} | null>(null)
+  const [addSubjectModalOpen, setAddSubjectModalOpen] = React.useState(false)
 
   const { data: subjects, isLoading, error } = useQuery(
     ['subjects', student?.id],
@@ -233,9 +235,32 @@ const SubjectsPage: React.FC = () => {
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             Choose Your Subject
           </Typography>
-          <Typography variant="h6" color="textSecondary" sx={{ mb: 2 }}>
+          <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
             Select a subject to explore AI-generated curriculum tailored to your level
           </Typography>
+          
+          <Button
+            variant="contained"
+            startIcon={<AutoAwesome />}
+            onClick={() => setAddSubjectModalOpen(true)}
+            sx={{
+              background: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
+              color: 'white',
+              fontWeight: 600,
+              px: 3,
+              py: 1.5,
+              borderRadius: 3,
+              textTransform: 'none',
+              boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #43a047 0%, #5cb85c 100%)',
+                boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            Add New Subject with AI
+          </Button>
         </Box>
       </motion.div>
 
@@ -409,6 +434,12 @@ const SubjectsPage: React.FC = () => {
           onDifficultySet={handleDifficultySet}
         />
       )}
+
+      {/* Add Subject Modal */}
+      <AddSubjectModal
+        open={addSubjectModalOpen}
+        onClose={() => setAddSubjectModalOpen(false)}
+      />
     </Container>
   )
 }
