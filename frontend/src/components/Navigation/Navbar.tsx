@@ -40,7 +40,7 @@ const Navbar: React.FC = () => {
   const handleLogout = () => {
     logout()
     handleMenuClose()
-    navigate('/auth')
+    navigate('/')
   }
 
   // Generate breadcrumbs based on current path

@@ -148,6 +148,28 @@ const TopicsPage: React.FC = () => {
             <Typography variant="h3" fontWeight="bold">
               {topicsData?.subject?.name || 'Topics'}
             </Typography>
+            {/* Difficulty Level Display */}
+            {topicsData?.subject?.difficulty_level && (
+              <Chip
+                label={topicsData.subject.difficulty_level}
+                sx={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  px: 1,
+                  bgcolor: topicsData.subject.difficulty_level === 'Foundation' ? '#4caf50' :
+                          topicsData.subject.difficulty_level === 'Intermediate' ? '#ff9800' :
+                          topicsData.subject.difficulty_level === 'Advanced' ? '#f44336' :
+                          topicsData.subject.difficulty_level === 'Expert' ? '#9c27b0' : 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: topicsData.subject.difficulty_level === 'Foundation' ? '#43a047' :
+                            topicsData.subject.difficulty_level === 'Intermediate' ? '#f57c00' :
+                            topicsData.subject.difficulty_level === 'Advanced' ? '#d32f2f' :
+                            topicsData.subject.difficulty_level === 'Expert' ? '#7b1fa2' : 'primary.dark',
+                  }
+                }}
+              />
+            )}
             {/* Only show regenerate button if content exists and not currently generating */}
             {topicsData?.is_generated && !isCurrentlyGenerating() && (
               <Tooltip title="Regenerate topics with fresh AI content">

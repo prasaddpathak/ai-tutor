@@ -157,6 +157,8 @@ async def get_topics(
         # Check if content exists for this user
         if not force_regenerate and content_key in user_generated_content["topics"]:
             existing_data = user_generated_content["topics"][content_key]
+            # Add difficulty level to subject object
+            subject_dict['difficulty_level'] = difficulty_level
             return {
                 "subject": subject_dict,
                 "topics": existing_data["topics"],
@@ -168,6 +170,8 @@ async def get_topics(
         
         # Check if generation is in progress
         if content_key in user_generated_content["generation_status"] and user_generated_content["generation_status"][content_key] == "generating":
+            # Add difficulty level to subject object
+            subject_dict['difficulty_level'] = difficulty_level
             return {
                 "subject": subject_dict,
                 "topics": [],
@@ -196,6 +200,9 @@ async def get_topics(
             
             # Clear generation status
             del user_generated_content["generation_status"][content_key]
+            
+            # Add difficulty level to subject object
+            subject_dict['difficulty_level'] = difficulty_level
             
             return {
                 "subject": subject_dict,
