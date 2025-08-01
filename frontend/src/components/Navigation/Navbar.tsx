@@ -5,10 +5,8 @@ import {
   Typography,
   Box,
   Avatar,
-  IconButton,
   Menu,
   MenuItem,
-  Chip,
   Breadcrumbs,
   Link,
   Button,
@@ -16,7 +14,6 @@ import {
 import {
   AccountCircle,
   Logout,
-  Dashboard,
   School,
   NavigateNext,
 } from '@mui/icons-material'
@@ -59,11 +56,10 @@ const Navbar: React.FC = () => {
         const subjectId = pathSegments[1]
         
         if (pathSegments.includes('topics')) {
-          breadcrumbs.push({ label: 'Topics', path: `/subjects/${subjectId}/topics` })
+          breadcrumbs.push({ label: 'Topics', path: `/subjects/${subjectId}/topics`, icon: <School fontSize="small" /> })
           
           if (pathSegments.includes('chapters')) {
-            const topicTitle = decodeURIComponent(pathSegments[3])
-            breadcrumbs.push({ label: 'Chapters', path: location.pathname })
+            breadcrumbs.push({ label: 'Chapters', path: location.pathname, icon: <School fontSize="small" /> })
           }
         }
       }
@@ -84,6 +80,9 @@ const Navbar: React.FC = () => {
         color: 'text.primary',
         borderBottom: '1px solid',
         borderColor: 'divider',
+        '& .MuiToolbar-root': {
+          background: 'linear-gradient(135deg, rgba(10, 81, 48, 0.05) 0%, rgba(59, 133, 78, 0.05) 100%)',
+        },
       }}
     >
       <Toolbar sx={{ minHeight: 70 }}>
@@ -102,22 +101,13 @@ const Navbar: React.FC = () => {
               color: 'inherit',
             }}
           >
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, #1976d2, #1565c0)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mr: 2,
-              }}
-            >
-              <School sx={{ color: 'white', fontSize: 24 }} />
-            </Box>
-            <Typography variant="h6" fontWeight="bold" color="primary">
-              AI Tutor
+            <img
+              src="/terrateach.svg"
+              alt="TerraTeach"
+              style={{ height: 40, width: 40, marginRight: 16 }}
+            />
+            <Typography variant="h6" fontWeight="bold" sx={{ color: '#0A5130' }}>
+              TerraTeach
             </Typography>
           </Box>
         </motion.div>
@@ -145,7 +135,7 @@ const Navbar: React.FC = () => {
                     textDecoration: 'none',
                     color: 'text.secondary',
                     '&:hover': {
-                      color: 'primary.main',
+                      color: '#0A5130',
                     },
                   }}
                 >
@@ -168,7 +158,7 @@ const Navbar: React.FC = () => {
                   sx={{
                     width: 32,
                     height: 32,
-                    bgcolor: 'primary.main',
+                    bgcolor: '#0A5130',
                     fontSize: '0.875rem',
                   }}
                 >

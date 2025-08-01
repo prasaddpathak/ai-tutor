@@ -1,4 +1,4 @@
-/* AI Tutor - Global Styles */
+/* TerraTeach - Global Styles */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -19,7 +19,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #fafafa;
+  background-color: #F8FAF5;
 }
 
 #root {
@@ -52,7 +52,7 @@ code {
 
 /* Focus outline for accessibility */
 *:focus-visible {
-  outline: 2px solid #1976d2;
+  outline: 2px solid #0A5130;
   outline-offset: 2px;
 }
 
@@ -80,11 +80,11 @@ code {
 
 /* Gradient backgrounds */
 .gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A5130 0%, #3B854E 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  background: linear-gradient(135deg, #3B854E 0%, #D3B651 100%);
 }
 
 /* Glass morphism effect */

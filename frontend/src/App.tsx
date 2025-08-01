@@ -1,10 +1,11 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box } from '@mui/material'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 import { useAuthStore } from './stores/authStore'
 import Navbar from './components/Navigation/Navbar'
+import LandingPage from './pages/Landing/LandingPage'
 import AuthPage from './pages/Auth/AuthPage'
 import SubjectsPage from './pages/Subjects/SubjectsPage'
 import TopicsPage from './pages/Topics/TopicsPage'
@@ -43,6 +44,7 @@ function App() {
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
         <Route 
           path="/auth" 
           element={
@@ -53,7 +55,6 @@ function App() {
         />
         
         {/* Protected Routes */}
-        <Route path="/" element={<Navigate to="/subjects" replace />} />
         <Route 
           path="/subjects" 
           element={

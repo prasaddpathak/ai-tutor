@@ -46,7 +46,7 @@ app.include_router(camera.router, prefix="/api/camera", tags=["Camera"])
 # Serve React static files in production
 frontend_dist = project_root / "frontend" / "dist"
 if frontend_dist.exists():
-    app.mount("/static", StaticFiles(directory=str(frontend_dist / "static")), name="static")
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
     
     @app.get("/")
     async def serve_react_app():

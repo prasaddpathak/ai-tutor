@@ -48,7 +48,7 @@ const AuthPage: React.FC = () => {
     },
   })
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue)
     setError(null)
     setCapturedImage(null)
@@ -119,7 +119,7 @@ const AuthPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #0A5130 0%, #3B854E 100%)',
         display: 'flex',
         alignItems: 'center',
         py: 4,
@@ -145,15 +145,24 @@ const AuthPage: React.FC = () => {
               sx={{
                 p: 4,
                 textAlign: 'center',
-                background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                background: 'linear-gradient(135deg, #0A5130 0%, #3B854E 100%)',
                 color: 'white',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
               }}
             >
-              <Typography variant="h3" fontWeight="bold" gutterBottom>
-                AI Tutor
+              <img
+                src="/terrateach.svg"
+                alt="TerraTeach"
+                style={{ height: 60, width: 60 }}
+              />
+              <Typography variant="h3" fontWeight="bold" gutterBottom sx={{ color: '#D3B651' }}>
+                TerraTeach
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                Offline Learning Platform
+                Sustainable AI-Powered Learning
               </Typography>
             </Box>
 
