@@ -25,6 +25,8 @@ router = APIRouter()
 user_generated_content: Dict[str, any] = {
     "topics": {},  # Format: f"{student_id}_{subject_name}_{difficulty_level}"
     "chapters": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{difficulty_level}"
+    "chapter_content": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{chapter_title}_{difficulty_level}"
+    "chapter_completions": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{chapter_title}_{difficulty_level}"
     "generation_status": {}
 }
 
@@ -33,6 +35,10 @@ def get_user_content_key(student_id: int, subject_name: str, difficulty_level: s
     if topic_title:
         return f"{student_id}_{subject_name}_{topic_title}_{difficulty_level}"
     return f"{student_id}_{subject_name}_{difficulty_level}"
+
+def get_chapter_content_key(student_id: int, subject_name: str, difficulty_level: str, topic_title: str, chapter_title: str) -> str:
+    """Generate user-specific chapter content key."""
+    return f"{student_id}_{subject_name}_{topic_title}_{chapter_title}_{difficulty_level}"
 
 @router.get("/", response_model=List[Subject])
 async def get_all_subjects(student_id: int = Query(None, description="Student ID to include difficulty levels")):
@@ -266,10 +272,27 @@ async def get_chapters(
         # Check if content exists for this user
         if not force_regenerate and content_key in user_generated_content["chapters"]:
             existing_data = user_generated_content["chapters"][content_key]
+            chapters_with_content_status = []
+            
+            for chapter in existing_data["chapters"]:
+                # Check if this specific chapter has content generated
+                chapter_content_key = get_chapter_content_key(
+                    student_id, subject_dict['name'], difficulty_level, topic_title, chapter.title
+                )
+                has_content = chapter_content_key in user_generated_content["chapter_content"]
+                is_completed = chapter_content_key in user_generated_content["chapter_completions"]
+                
+                chapters_with_content_status.append({
+                    "title": chapter.title,
+                    "content": chapter.content,
+                    "has_content_generated": has_content,
+                    "is_completed": is_completed
+                })
+            
             return {
                 "subject": subject_dict,
                 "topic_title": topic_title,
-                "chapters": existing_data["chapters"],
+                "chapters": chapters_with_content_status,
                 "is_generated": True,
                 "generated_at": existing_data["generated_at"].isoformat(),
                 "generating": False,
@@ -304,10 +327,20 @@ async def get_chapters(
             # Clear generation status
             del user_generated_content["generation_status"][content_key]
             
+            # Format chapters with content status (all false since just generated)
+            chapters_with_content_status = []
+            for chapter in chapters:
+                chapters_with_content_status.append({
+                    "title": chapter.title,
+                    "content": chapter.content,
+                    "has_content_generated": False,
+                    "is_completed": False
+                })
+            
             return {
                 "subject": subject_dict,
                 "topic_title": topic_title,
-                "chapters": chapters,
+                "chapters": chapters_with_content_status,
                 "is_generated": True,
                 "generated_at": generated_at.isoformat(),
                 "generating": False,
@@ -369,11 +402,32 @@ async def get_chapter_content(
         if not chapter:
             raise HTTPException(status_code=404, detail="Chapter not found")
         
-        # Generate paginated content for this chapter
+        # Check if chapter content is already cached
+        chapter_content_key = get_chapter_content_key(
+            student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
+        )
+        
+        if chapter_content_key in user_generated_content["chapter_content"]:
+            # Return cached content
+            cached_content = user_generated_content["chapter_content"][chapter_content_key]
+            return {
+                "subject": subject_dict,
+                "topic_title": topic_title,
+                "chapter_title": chapter_title,
+                "total_pages": len(cached_content['pages']),
+                "pages": cached_content['pages'],  # All pages
+                "chapter_summary": cached_content['summary'],
+                "difficulty_level": difficulty_level
+            }
+        
+        # Generate paginated content for this chapter only if not cached
         from backend.core.curriculum.curriculum_service import generate_paginated_chapter_content
         paginated_content = generate_paginated_chapter_content(
             chapter_title, topic_title, subject_dict['name'], difficulty_level
         )
+        
+        # Cache the generated content
+        user_generated_content["chapter_content"][chapter_content_key] = paginated_content
         
         # Return ALL pages at once
         return {
@@ -390,6 +444,54 @@ async def get_chapter_content(
         raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get chapter content: {str(e)}")
+
+@router.post("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/complete")
+async def complete_chapter(
+    subject_id: int, 
+    topic_title: str, 
+    chapter_title: str,
+    student_id: int = Query(..., description="Student ID for user-specific completion tracking")
+):
+    """Mark a chapter as completed by the student."""
+    try:
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Get difficulty level for this student-subject combination
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="Difficulty level required")
+        
+        # Generate completion key
+        chapter_content_key = get_chapter_content_key(
+            student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
+        )
+        
+        # Mark chapter as completed
+        user_generated_content["chapter_completions"][chapter_content_key] = {
+            "completed_at": datetime.now(),
+            "student_id": student_id,
+            "subject_name": subject_dict['name'],
+            "topic_title": topic_title,
+            "chapter_title": chapter_title,
+            "difficulty_level": difficulty_level
+        }
+        
+        return {
+            "success": True,
+            "message": f"Chapter '{chapter_title}' marked as completed",
+            "completed_at": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to complete chapter: {str(e)}")
 
 @router.delete("/{subject_id}/topics/content")
 async def clear_topics_content(

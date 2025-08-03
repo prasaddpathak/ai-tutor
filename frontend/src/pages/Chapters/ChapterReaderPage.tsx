@@ -10,16 +10,18 @@ import {
   Chip,
   Stack,
   Paper,
+  CircularProgress,
 } from '@mui/material'
 import {
   ArrowBack,
   NavigateBefore,
   NavigateNext,
   Article,
+  CheckCircle,
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useQuery } from 'react-query'
+import { useQuery, useMutation, useQueryClient } from 'react-query'
 
 import { subjectsAPI, ChapterContentPage } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
@@ -33,6 +35,7 @@ const ChapterReaderPage: React.FC = () => {
   }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const student = useAuthStore((state) => state.student)
+  const queryClient = useQueryClient()
   
   const currentPage = parseInt(searchParams.get('page') || '1')
 
@@ -48,6 +51,26 @@ const ChapterReaderPage: React.FC = () => {
     {
       enabled: !!subjectId && !!topicTitle && !!chapterTitle && !!student?.id,
       retry: 2,
+    }
+  )
+
+  const completeChapterMutation = useMutation(
+    () => subjectsAPI.completeChapter(
+      parseInt(subjectId!),
+      decodeURIComponent(topicTitle!),
+      decodeURIComponent(chapterTitle!),
+      student!.id
+    ),
+    {
+      onSuccess: () => {
+        // Invalidate chapters query to update the UI with completion status
+        queryClient.invalidateQueries(['chapters', subjectId, topicTitle, student?.id])
+        // Navigate back to chapters list
+        navigate(`/subjects/${subjectId}/topics/${topicTitle}/chapters`)
+      },
+      onError: (error) => {
+        console.error('Failed to complete chapter:', error)
+      }
     }
   )
 
@@ -67,6 +90,10 @@ const ChapterReaderPage: React.FC = () => {
 
   const handleNext = () => {
     handlePageChange(currentPage + 1)
+  }
+
+  const handleCompleteChapter = () => {
+    completeChapterMutation.mutate()
   }
 
   const progressPercentage = chapterData 
@@ -267,15 +294,36 @@ const ChapterReaderPage: React.FC = () => {
               </Typography>
             </Box>
 
-            <Button
-              endIcon={<NavigateNext />}
-              onClick={handleNext}
-              disabled={currentPage >= chapterData.total_pages}
-              variant="contained"
-              size="large"
-            >
-              Next
-            </Button>
+            {currentPage >= chapterData.total_pages ? (
+              <Button
+                endIcon={completeChapterMutation.isLoading ? <CircularProgress size={20} /> : <CheckCircle />}
+                onClick={handleCompleteChapter}
+                disabled={completeChapterMutation.isLoading}
+                variant="contained"
+                size="large"
+                color="success"
+                sx={{
+                  backgroundColor: 'success.main',
+                  '&:hover': {
+                    backgroundColor: 'success.dark',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 20px rgba(76, 175, 80, 0.3)',
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                {completeChapterMutation.isLoading ? 'Completing...' : 'Complete Chapter'}
+              </Button>
+            ) : (
+              <Button
+                endIcon={<NavigateNext />}
+                onClick={handleNext}
+                variant="contained"
+                size="large"
+              >
+                Next
+              </Button>
+            )}
           </Stack>
         </Card>
       </motion.div>

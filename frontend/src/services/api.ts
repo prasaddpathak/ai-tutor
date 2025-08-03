@@ -148,6 +148,13 @@ export const subjectsAPI = {
         page: page
       }
     }),
+
+  completeChapter: (subjectId: number, topicTitle: string, chapterTitle: string, studentId: number) =>
+    api.post(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/${encodeURIComponent(chapterTitle)}/complete`, {}, {
+      params: {
+        student_id: studentId
+      }
+    }),
   
   generateTopics: (subjectName: string, difficultyLevel: string) =>
     api.post('/subjects/generate-topics', {

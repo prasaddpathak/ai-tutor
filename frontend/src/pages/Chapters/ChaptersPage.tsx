@@ -259,10 +259,23 @@ const ChaptersPage: React.FC = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                             <MenuBook fontSize="small" />
                             <Box sx={{ textAlign: 'left', flex: 1 }}>
-                              <Typography variant="body2" sx={{ textTransform: 'none' }}>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  textTransform: 'none',
+                                  textDecoration: chapter.is_completed ? 'line-through' : 'none',
+                                  opacity: chapter.is_completed ? 0.7 : 1,
+                                }}
+                              >
                                 {chapter.title}
                               </Typography>
                             </Box>
+                            {chapter.has_content_generated && (
+                              <CheckCircle 
+                                fontSize="small" 
+                                sx={{ color: 'success.main', mr: 0.5 }}
+                              />
+                            )}
                             <Chip
                               label={`#${index + 1}`}
                               size="small"
@@ -292,14 +305,15 @@ const ChaptersPage: React.FC = () => {
 
         {/* Chapter Content */}
         <Grid item xs={12} md={8}>
-          <Card sx={{ minHeight: '60vh' }}>
-            <CardContent sx={{ p: 4 }}>
+          <Card sx={{ minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
               {selectedChapter ? (
                 <motion.div
                   key={selectedChapter.title}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
+                  style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                 >
                   <Typography variant="h4" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
                     {selectedChapter.title}
@@ -308,6 +322,7 @@ const ChaptersPage: React.FC = () => {
                   <Box
                     sx={{ 
                       mb: 4,
+                      flexGrow: 1,
                       '& h1, & h2, & h3, & h4, & h5, & h6': {
                         color: 'primary.main',
                         fontWeight: 'bold',
@@ -351,8 +366,8 @@ const ChaptersPage: React.FC = () => {
                     <ReactMarkdown>{selectedChapter.content}</ReactMarkdown>
                   </Box>
 
-                  {/* Read Chapter Button - Centered at bottom */}
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                  {/* Read Chapter Button - Always at bottom */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 'auto', pt: 2 }}>
                     <Button
                       variant="contained"
                       size="large"
