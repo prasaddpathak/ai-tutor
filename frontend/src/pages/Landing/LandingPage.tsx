@@ -35,7 +35,7 @@ const LandingPage: React.FC = () => {
     {
       icon: <CameraAltOutlined sx={{ fontSize: 40 }} />,
       title: 'Hassle-Free Login',
-      description: 'No passwords to remember! Simply look at your camera and get instant access to your personalized learning dashboard',
+      description: 'No passwords to remember! Simply look at your camera and get instant access',
     },
     {
       icon: <PsychologyOutlined sx={{ fontSize: 40 }} />,
