@@ -323,6 +323,74 @@ async def get_chapters(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get chapters: {str(e)}")
 
+@router.get("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/content")
+async def get_chapter_content(
+    subject_id: int, 
+    topic_title: str, 
+    chapter_title: str,
+    student_id: int = Query(..., description="Student ID for user-specific content"),
+    page: int = Query(1, description="Page number (1-based)")
+):
+    """Get paginated content for a specific chapter."""
+    try:
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Get difficulty level for this student-subject combination
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            return {
+                "error": "Difficulty level required",
+                "message": "Please select a difficulty level for this subject first.",
+                "available_levels": DIFFICULTY_LEVELS
+            }
+        
+        content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
+        
+        # Check if chapters exist for this user
+        if content_key not in user_generated_content["chapters"]:
+            raise HTTPException(status_code=404, detail="Chapters not found. Please generate chapters first.")
+        
+        chapters_data = user_generated_content["chapters"][content_key]
+        chapters = chapters_data["chapters"]
+        
+        # Find the requested chapter
+        chapter = None
+        for ch in chapters:
+            if ch.title == chapter_title:
+                chapter = ch
+                break
+        
+        if not chapter:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+        
+        # Generate paginated content for this chapter
+        from backend.core.curriculum.curriculum_service import generate_paginated_chapter_content
+        paginated_content = generate_paginated_chapter_content(
+            chapter_title, topic_title, subject_dict['name'], difficulty_level
+        )
+        
+        # Return ALL pages at once
+        return {
+            "subject": subject_dict,
+            "topic_title": topic_title,
+            "chapter_title": chapter_title,
+            "total_pages": len(paginated_content['pages']),
+            "pages": paginated_content['pages'],  # All pages
+            "chapter_summary": paginated_content['summary'],
+            "difficulty_level": difficulty_level
+        }
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get chapter content: {str(e)}")
+
 @router.delete("/{subject_id}/topics/content")
 async def clear_topics_content(
     subject_id: int, 

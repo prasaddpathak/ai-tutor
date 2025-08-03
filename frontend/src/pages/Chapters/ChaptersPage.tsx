@@ -301,12 +301,13 @@ const ChaptersPage: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
+                  <Typography variant="h4" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
                     {selectedChapter.title}
                   </Typography>
                   
                   <Box
                     sx={{ 
+                      mb: 4,
                       '& h1, & h2, & h3, & h4, & h5, & h6': {
                         color: 'primary.main',
                         fontWeight: 'bold',
@@ -348,6 +349,35 @@ const ChaptersPage: React.FC = () => {
                     }}
                   >
                     <ReactMarkdown>{selectedChapter.content}</ReactMarkdown>
+                  </Box>
+
+                  {/* Read Chapter Button - Centered at bottom */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<MenuBook />}
+                      onClick={() => navigate(`/subjects/${subjectId}/topics/${topicTitle}/chapters/${encodeURIComponent(selectedChapter.title)}/read?page=1`)}
+                      sx={{
+                        backgroundColor: '#1976d2',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        px: 4,
+                        py: 2,
+                        borderRadius: 3,
+                        fontSize: '1.1rem',
+                        minWidth: 200,
+                        '&:hover': {
+                          backgroundColor: '#1565c0',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 8px 25px rgba(25, 118, 210, 0.3)',
+                        },
+                        transition: 'all 0.3s ease-in-out',
+                        boxShadow: '0 4px 15px rgba(25, 118, 210, 0.2)',
+                      }}
+                    >
+                      Read Full Chapter
+                    </Button>
                   </Box>
                 </motion.div>
               ) : (

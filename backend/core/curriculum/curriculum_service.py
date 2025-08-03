@@ -7,6 +7,7 @@ from backend.models.curriculum import Topic, Chapter
 import json
 import re
 from typing import List, Dict
+from fastapi import HTTPException
 
 def _clean_markdown_text(text: str) -> str:
     """Clean up markdown formatting from text."""
@@ -202,3 +203,94 @@ def generate_subject_recommendations(user_request: str) -> List[Dict]:
     prompt = get_subject_recommendations_prompt(user_request)
     response = query_llm(prompt)
     return _parse_subject_recommendations_response(response)
+
+def _split_content_into_pages(content: str, words_per_page: int = 400) -> List[str]:
+    """Split content into pages based on approximate word count."""
+    if not content:
+        return ["No content available"]
+    
+    words = content.split()
+    if len(words) <= words_per_page:
+        return [content]
+    
+    pages = []
+    current_page_words = []
+    
+    for word in words:
+        current_page_words.append(word)
+        
+        # Check if we should break the page
+        if len(current_page_words) >= words_per_page:
+            # Try to find a good break point (end of sentence or paragraph)
+            page_text = ' '.join(current_page_words)
+            
+            # Look for sentence endings near the target length
+            sentences = page_text.split('. ')
+            if len(sentences) > 1:
+                # Keep all but the last incomplete sentence
+                complete_sentences = '. '.join(sentences[:-1]) + '.'
+                remaining_words = sentences[-1].split()
+                
+                pages.append(complete_sentences)
+                current_page_words = remaining_words
+            else:
+                # No good break point, just split at word limit
+                pages.append(page_text)
+                current_page_words = []
+    
+    # Add remaining words as the last page
+    if current_page_words:
+        pages.append(' '.join(current_page_words))
+    
+    return pages
+
+def generate_paginated_chapter_content(chapter_title: str, topic_title: str, subject_name: str, difficulty_level: str) -> Dict:
+    """Generate comprehensive, paginated content for a specific chapter."""
+    from backend.core.curriculum.prompts import get_detailed_chapter_content_prompt
+    
+    prompt = get_detailed_chapter_content_prompt(chapter_title, topic_title, subject_name, difficulty_level)
+    response = query_llm(prompt)
+    
+    # Parse the JSON response directly - no fallbacks
+    try:
+        # Clean up markdown code blocks if present
+        clean_response = response.strip()
+        if clean_response.startswith('```json'):
+            clean_response = clean_response[7:]  # Remove ```json
+        if clean_response.endswith('```'):
+            clean_response = clean_response[:-3]  # Remove ```
+        clean_response = clean_response.strip()
+        
+        chapter_data = json.loads(clean_response)
+        
+        if not isinstance(chapter_data, dict):
+            raise ValueError("LLM did not return a JSON object")
+        
+        # Extract pages directly from the structured response
+        pages = []
+        for i in range(1, 7):  # pages 1-6
+            page_key = f'page_{i}'
+            if page_key in chapter_data:
+                pages.append(chapter_data[page_key])
+            else:
+                raise ValueError(f"Missing {page_key} in LLM response")
+        
+        # Validate that we have exactly 6 pages
+        if len(pages) != 6:
+            raise ValueError(f"Expected 6 pages, got {len(pages)}")
+        
+        # Validate chapter_summary exists
+        if 'chapter_summary' not in chapter_data:
+            raise ValueError("Missing chapter_summary in LLM response")
+        
+        return {
+            'pages': pages,
+            'summary': chapter_data['chapter_summary']
+        }
+        
+    except (json.JSONDecodeError, ValueError, KeyError) as e:
+        # If JSON parsing fails, it means the LLM didn't follow instructions
+        raise HTTPException(
+            status_code=500, 
+            detail=f"LLM failed to generate proper JSON content: {str(e)}. Raw response: {response[:200]}..."
+        )

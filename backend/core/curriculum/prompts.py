@@ -108,3 +108,30 @@ def get_subject_recommendations_prompt(user_request: str) -> str:
     Ensure the JSON is valid and properly formatted. Do not include any additional text outside the JSON array.
     Make each subject recommendation specific, practical, and clearly connected to the student's original request.
     """
+
+def get_detailed_chapter_content_prompt(chapter_title: str, topic_title: str, subject_name: str, level: str) -> str:
+    return f"""
+You must respond with ONLY a valid JSON object. No other text, no markdown, no code blocks.
+
+Create educational content for "{chapter_title}" in {topic_title} for {subject_name} at {level} level.
+
+Requirements:
+- Each page must be 400+ words of plain text
+- No special characters, no markdown, no formatting symbols
+- Write clear textbook prose
+- Include examples and explanations
+
+Return ONLY this JSON structure:
+
+{{
+"page_1": "Introduction and Overview content here as plain text...",
+"page_2": "Fundamental Concepts content here as plain text...", 
+"page_3": "Detailed Mechanisms content here as plain text...",
+"page_4": "Practical Applications content here as plain text...",
+"page_5": "Advanced Topics content here as plain text...",
+"page_6": "Summary and Key Takeaways content here as plain text...",
+"chapter_summary": "One sentence summary"
+}}
+
+RESPOND WITH ONLY THE JSON OBJECT. NO OTHER TEXT.
+    """

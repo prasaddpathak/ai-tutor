@@ -72,6 +72,16 @@ export interface Chapter {
   content: string
 }
 
+export interface ChapterContentPage {
+  subject: any
+  topic_title: string
+  chapter_title: string
+  total_pages: number
+  pages: string[]  // Array of all page contents
+  chapter_summary: string
+  difficulty_level: string
+}
+
 export interface CameraInfo {
   index: number
   name: string
@@ -128,6 +138,14 @@ export const subjectsAPI = {
       params: { 
         student_id: studentId,
         ...(forceRegenerate && { force_regenerate: forceRegenerate })
+      }
+    }),
+  
+  getChapterContent: (subjectId: number, topicTitle: string, chapterTitle: string, studentId: number, page: number = 1) =>
+    api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/chapters/${encodeURIComponent(chapterTitle)}/content`, {
+      params: {
+        student_id: studentId,
+        page: page
       }
     }),
   
