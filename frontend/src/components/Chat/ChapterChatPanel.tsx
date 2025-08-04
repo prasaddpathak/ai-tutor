@@ -20,6 +20,8 @@ import {
   Person,
 } from '@mui/icons-material'
 import { motion, AnimatePresence } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface ChatMessage {
   id: string
@@ -377,16 +379,93 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                       {message.type === 'user' && (
                         <Person sx={{ fontSize: 16, mt: 0.5, opacity: 0.7 }} />
                       )}
-                      <Box sx={{ flex: 1 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
+                      <Box 
+                        sx={{ 
+                          flex: 1,
+                          '& p': {
+                            m: 0,
+                            mb: 1,
+                          },
+                          '& p:last-child': {
+                            mb: 0,
+                          },
+                          '& h1, & h2, & h3, & h4, & h5, & h6': {
+                            mt: 1,
+                            mb: 1,
+                            fontSize: 'inherit',
+                            fontWeight: 'bold',
+                          },
+                          '& ul, & ol': {
+                            m: 0,
+                            pl: 2,
+                            mb: 1,
+                          },
+                          '& ul:last-child, & ol:last-child': {
+                            mb: 0,
+                          },
+                          '& li': {
+                            mb: 0.5,
+                          },
+                          '& blockquote': {
+                            borderLeft: `3px solid ${message.type === 'user' ? 'rgba(255,255,255,0.5)' : '#0A5130'}`,
+                            pl: 1,
+                            ml: 0,
+                            fontStyle: 'italic',
+                            backgroundColor: message.type === 'user' ? 'rgba(255,255,255,0.1)' : 'rgba(10, 81, 48, 0.1)',
+                            py: 0.5,
+                            m: 0,
+                            mb: 1,
+                          },
+                          '& blockquote:last-child': {
+                            mb: 0,
+                          },
+                          '& code': {
+                            backgroundColor: message.type === 'user' ? 'rgba(255,255,255,0.2)' : 'rgba(0, 0, 0, 0.1)',
+                            padding: '2px 4px',
+                            borderRadius: '3px',
+                            fontFamily: 'monospace',
+                            fontSize: '0.9em',
+                          },
+                          '& pre': {
+                            backgroundColor: message.type === 'user' ? 'rgba(255,255,255,0.15)' : 'rgba(0, 0, 0, 0.05)',
+                            padding: '8px',
+                            borderRadius: '4px',
+                            overflow: 'auto',
+                            m: 0,
+                            mb: 1,
+                            fontSize: '0.9em',
+                          },
+                          '& pre:last-child': {
+                            mb: 0,
+                          },
+                          '& strong, & b': {
+                            fontWeight: 'bold',
+                          },
+                          '& em, & i': {
+                            fontStyle: 'italic',
+                          },
+                        }}
+                      >
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => (
+                              <Typography 
+                                variant="body2" 
+                                component="p"
+                                sx={{ 
+                                  wordBreak: 'break-word',
+                                  fontSize: 'inherit',
+                                  lineHeight: 'inherit',
+                                }}
+                              >
+                                {children}
+                              </Typography>
+                            ),
                           }}
                         >
                           {message.content}
-                        </Typography>
+                        </ReactMarkdown>
                       </Box>
                     </Stack>
                   </Paper>

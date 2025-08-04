@@ -22,6 +22,8 @@ import {
 import { motion } from 'framer-motion'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { subjectsAPI, ChapterContentPage } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
@@ -215,9 +217,11 @@ const ChapterReaderPage: React.FC = () => {
             </Box>
 
             {/* Chapter Summary */}
-            <Typography variant="body2" sx={{ opacity: 0.9, fontStyle: 'italic' }}>
-              {chapterData.chapter_summary}
-            </Typography>
+            <Box sx={{ opacity: 0.9, fontStyle: 'italic', '& p': { mb: 1 }, '& p:last-child': { mb: 0 } }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {chapterData.chapter_summary}
+              </ReactMarkdown>
+            </Box>
           </CardContent>
         </Card>
       </motion.div>
@@ -257,11 +261,53 @@ const ChapterReaderPage: React.FC = () => {
                 fontSize: '1.15rem',
                 fontWeight: 500,
               },
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                textIndent: 0,
+                mb: 2,
+                mt: 3,
+                fontWeight: 'bold',
+              },
+              '& ul, & ol': {
+                textIndent: 0,
+                mb: 2,
+                pl: 3,
+              },
+              '& li': {
+                mb: 1,
+              },
+              '& blockquote': {
+                borderLeft: '4px solid #0A5130',
+                pl: 2,
+                ml: 0,
+                fontStyle: 'italic',
+                backgroundColor: 'rgba(10, 81, 48, 0.05)',
+                py: 1,
+                textIndent: 0,
+              },
+              '& code': {
+                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                padding: '2px 4px',
+                borderRadius: '3px',
+                fontFamily: 'monospace',
+              },
+              '& pre': {
+                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                padding: '12px',
+                borderRadius: '6px',
+                overflow: 'auto',
+                textIndent: 0,
+              },
+              '& strong, & b': {
+                fontWeight: 'bold',
+              },
+              '& em, & i': {
+                fontStyle: 'italic',
+              },
             }}
           >
-            <Typography component="div" sx={{ whiteSpace: 'pre-line' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {currentPageContent}
-            </Typography>
+            </ReactMarkdown>
           </Box>
         </Paper>
       </motion.div>
