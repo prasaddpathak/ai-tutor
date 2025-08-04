@@ -64,13 +64,13 @@ if frontend_dist.exists() and os.getenv("NODE_ENV") == "production":
 async def startup_event():
     """Initialize database and services on startup."""
     print("🚀 Starting AI Tutor API...")
-    print("📊 Initializing database...")
-    try:
-        db.init_database()
-        print("✅ Database initialized successfully")
-    except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
-        raise
+    # print("📊 Initializing database...")
+    # try:
+    #     db.init_database()
+    #     print("✅ Database initialized successfully")
+    # except Exception as e:
+    #     print(f"❌ Database initialization failed: {e}")
+    #     raise
 
 @app.get("/api/health")
 async def health_check():

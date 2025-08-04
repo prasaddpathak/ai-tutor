@@ -172,9 +172,10 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             style={{
               position: 'fixed',
               bottom: 24,
@@ -189,7 +190,9 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                 background: 'linear-gradient(135deg, #0A5130 0%, #3B854E 100%)',
                 '&:hover': {
                   background: 'linear-gradient(135deg, #0A5130 0%, #2A4A3A 100%)',
+                  transform: 'scale(1.1)',
                 },
+                transition: 'all 0.2s ease',
               }}
             >
               <Chat />
@@ -198,29 +201,63 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Chat Panel */}
-      <Collapse in={isOpen} orientation="horizontal">
-        <motion.div
-          initial={{ x: 400 }}
-          animate={{ x: 0 }}
-          exit={{ x: 400 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        >
-          <Paper
-            sx={{
-              width: 380,
-              height: '100vh',
-              position: 'fixed',
-              right: 0,
-              top: 0,
-              zIndex: 1200,
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 0,
-              borderLeft: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
+      {/* Chat Panel with Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop Blur */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 1100,
+              }}
+              onClick={onToggle}
+            />
+
+            {/* Chat Panel */}
+            <motion.div
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ 
+                duration: 0.3, 
+                ease: "easeOut",
+                opacity: { duration: 0.2 }
+              }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 1200,
+                width: '60%',
+                minWidth: '500px',
+                maxWidth: '800px',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Paper
+                sx={{
+                  width: '100%',
+                  height: '100vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: 0,
+                  borderLeft: '1px solid',
+                  borderColor: 'divider',
+                  boxShadow: '-4px 0 20px rgba(0, 0, 0, 0.15)',
+                }}
+              >
             {/* Header */}
             <Box
               sx={{
@@ -391,9 +428,11 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                 </IconButton>
               </Stack>
             </Box>
-          </Paper>
-        </motion.div>
-      </Collapse>
+              </Paper>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   )
 }
