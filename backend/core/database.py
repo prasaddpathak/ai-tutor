@@ -37,11 +37,12 @@ class DatabaseManager:
             conn.execute('DROP TABLE IF EXISTS subjects')
             conn.execute('DROP TABLE IF EXISTS students')
             
-            # Students table (clean, no difficulty_level)
+            # Students table (clean, no difficulty_level, with language preference)
             conn.execute('''
                 CREATE TABLE students (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT UNIQUE NOT NULL,
+                    language_preference TEXT DEFAULT 'en' CHECK (language_preference IN ('en', 'es')),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -154,12 +155,12 @@ class DatabaseManager:
                 (name, description)
             )
     
-    def create_student(self, name: str) -> int:
-        """Create a new student profile."""
+    def create_student(self, name: str, language_preference: str = 'en') -> int:
+        """Create a new student profile with language preference."""
         with self.get_connection() as conn:
             cursor = conn.execute(
-                'INSERT INTO students (name) VALUES (?)',
-                (name,)
+                'INSERT INTO students (name, language_preference) VALUES (?, ?)',
+                (name, language_preference)
             )
             return cursor.lastrowid
     
@@ -177,6 +178,14 @@ class DatabaseManager:
             conn.execute(
                 'UPDATE students SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
                 (student_id,)
+            )
+    
+    def update_student_language(self, student_id: int, language_preference: str):
+        """Update student's language preference."""
+        with self.get_connection() as conn:
+            conn.execute(
+                'UPDATE students SET language_preference = ? WHERE id = ?',
+                (language_preference, student_id)
             )
     
     def get_all_subjects(self) -> List[Dict]:

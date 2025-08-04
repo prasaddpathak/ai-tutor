@@ -22,6 +22,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useTranslation } from 'react-i18next'
 
 interface ChatMessage {
   id: string
@@ -49,6 +50,7 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
   isOpen,
   onToggle,
 }) => {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -290,7 +292,7 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                 <SmartToy />
                 <Box>
                   <Typography variant="h6" fontWeight="bold">
-                    AI Tutor
+                    {t('chat.title')}
                   </Typography>
                   <Typography variant="caption" sx={{ opacity: 0.9 }}>
                     {chapterTitle}
@@ -305,7 +307,7 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
             {/* Current Page Indicator */}
             <Box sx={{ p: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
               <Chip
-                label={`Page ${currentPage}`}
+                label={t('chat.page', { number: currentPage })}
                 size="small"
                 sx={{
                   backgroundColor: 'rgba(10, 81, 48, 0.1)',
@@ -335,10 +337,10 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                 >
                   <SmartToy sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
                   <Typography variant="body2">
-                    Ask me anything about this chapter!
+                    {t('chat.emptyState')}
                   </Typography>
                   <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-                    I have context about the content you're reading.
+                    {t('chat.contextInfo')}
                   </Typography>
                 </Box>
               )}
@@ -487,7 +489,7 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                 <TextField
                   fullWidth
                   variant="outlined"
-                  placeholder="Ask about this chapter..."
+                  placeholder={t('chat.placeholder')}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}

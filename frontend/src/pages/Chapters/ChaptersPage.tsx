@@ -38,12 +38,14 @@ import ReactMarkdown from 'react-markdown'
 
 import { subjectsAPI, QuizResultsHistory } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import { useTranslation } from 'react-i18next'
 
 const ChaptersPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId, topicTitle } = useParams<{ subjectId: string; topicTitle: string }>()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [selectedChapter, setSelectedChapter] = React.useState<any>(null)
   const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
 
@@ -143,10 +145,10 @@ const ChaptersPage: React.FC = () => {
           onClick={handleBack}
           sx={{ mb: 3 }}
         >
-          Back to Topics
+          {t('chapters.backToTopics')}
         </Button>
         <Alert severity="error">
-          Failed to load chapters. Please try again later.
+          {t('chapters.failedToLoad')}
         </Alert>
       </Container>
     )
@@ -165,7 +167,7 @@ const ChaptersPage: React.FC = () => {
           onClick={handleBack}
           sx={{ mb: 3 }}
         >
-          Back to Topics
+          {t('chapters.backToTopics')}
         </Button>
 
         <Box sx={{ mb: 4, textAlign: 'center' }}>
@@ -175,7 +177,7 @@ const ChaptersPage: React.FC = () => {
             </Typography>
             {/* Only show regenerate button if content exists and not currently generating */}
             {chaptersData?.is_generated && !isCurrentlyGenerating() && (
-              <Tooltip title="Regenerate chapters with fresh AI content">
+              <Tooltip title={t('chapters.regenerateTooltip')}>
                 <IconButton
                   onClick={handleRegenerate}
                   color="primary"
@@ -191,7 +193,7 @@ const ChaptersPage: React.FC = () => {
             )}
           </Box>
           <Typography variant="h6" color="textSecondary">
-            {isLoading ? 'Loading chapters...' : 'Select a chapter to read the content'}
+            {isLoading ? t('chapters.loadingChapters') : t('chapters.selectChapterToRead')}
           </Typography>
         </Box>
       </motion.div>
@@ -205,7 +207,7 @@ const ChaptersPage: React.FC = () => {
         >
           <Card sx={{ mb: 3, p: 3, textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom color="warning.main">
-              Difficulty Level Required
+              {t('chapters.difficultyRequired')}
             </Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
               {chaptersData.message}
@@ -215,7 +217,7 @@ const ChaptersPage: React.FC = () => {
               onClick={() => navigate('/subjects')}
               sx={{ mt: 1 }}
             >
-              Back to Subjects
+              {t('chapters.backToSubjects')}
             </Button>
           </Card>
         </motion.div>
@@ -228,11 +230,11 @@ const ChaptersPage: React.FC = () => {
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold">
-                  Chapters
+                  {t('chapters.title')}
                 </Typography>
                 {chaptersData?.chapters && chaptersData.chapters.length > 0 && (
                   <Chip
-                    label={`${chaptersData.chapters.length} chapters`}
+                    label={t('chapters.chaptersGenerated', { count: chaptersData.chapters.length })}
                     size="small"
                     color="primary"
                     variant="outlined"
@@ -259,10 +261,10 @@ const ChaptersPage: React.FC = () => {
                 <Box sx={{ textAlign: 'center', py: 3 }}>
                   <CircularProgress size={32} sx={{ mb: 2 }} />
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                    Generating chapters with AI...
+                    {t('chapters.generatingChapters')}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    This may take up to 5-10 minutes
+                    {t('chapters.generatingMayTake')}
                   </Typography>
                 </Box>
               )}
@@ -344,7 +346,7 @@ const ChaptersPage: React.FC = () => {
               {!isLoading && (!chaptersData?.chapters || chaptersData.chapters.length === 0) && !isCurrentlyGenerating() && (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No chapters available
+                    {t('chapters.noChapters')}
                   </Typography>
                 </Box>
               )}
@@ -440,7 +442,7 @@ const ChaptersPage: React.FC = () => {
                         boxShadow: '0 4px 15px rgba(25, 118, 210, 0.2)',
                       }}
                     >
-                      Read Full Chapter
+                      {t('chapters.readFullChapter')}
                     </Button>
                   </Box>
                 </motion.div>
@@ -448,10 +450,10 @@ const ChaptersPage: React.FC = () => {
                 <Box sx={{ textAlign: 'center', py: 8 }}>
                   <MenuBook sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
                   <Typography variant="h5" gutterBottom>
-                    Select a Chapter
+                    {t('chapters.selectAChapter')}
                   </Typography>
                   <Typography variant="body1" color="textSecondary">
-                    Choose a chapter from the list to view its detailed content
+                    {t('chapters.chooseChapterToView')}
                   </Typography>
                 </Box>
               )}
@@ -467,17 +469,15 @@ const ChaptersPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Regenerate Chapters?</DialogTitle>
+        <DialogTitle>{t('chapters.regenerateDialog.title')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This will generate fresh AI content for all chapters in this topic. 
-            The current chapters will be replaced. This process may take several minutes.
-            Are you sure you want to continue?
+            {t('chapters.regenerateDialog.description')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRegenerateDialogOpen(false)}>
-            Cancel
+            {t('chapters.regenerateDialog.cancel')}
           </Button>
           <Button 
             onClick={confirmRegenerate} 
@@ -485,7 +485,7 @@ const ChaptersPage: React.FC = () => {
             color="primary"
             disabled={regenerateChaptersMutation.isLoading}
           >
-            {regenerateChaptersMutation.isLoading ? 'Regenerating...' : 'Regenerate'}
+            {regenerateChaptersMutation.isLoading ? t('chapters.regenerateDialog.regenerating') : t('chapters.regenerateDialog.confirm')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -504,6 +504,7 @@ interface QuizCardProps {
 
 const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, quizResults, onCheckResults }) => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   
   // Check if all chapters are completed (have content generated)
   const allChaptersCompleted = chapters.every(chapter => chapter.has_content_generated)
@@ -546,10 +547,10 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
               <EmojiEvents sx={{ fontSize: 32, color: getScoreColor(quizResults.best_percentage || 0) }} />
               <Box>
                 <Typography variant="h6" fontWeight="bold">
-                  Quiz Results
+                  {t('chapters.quizResults')}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  {quizResults.total_attempts} attempt{quizResults.total_attempts !== 1 ? 's' : ''} • Best Score: {quizResults.best_percentage?.toFixed(1)}%
+                  {quizResults.total_attempts} {quizResults.total_attempts === 1 ? t('chapters.attempt') : t('chapters.attempts')} • {t('chapters.bestScore')}: {quizResults.best_percentage?.toFixed(1)}%
                 </Typography>
               </Box>
             </Box>
@@ -563,7 +564,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
               border: `1px solid ${getScoreColor(quizResults.best_percentage || 0)}`,
             }}>
               <Typography variant="body2" color="textSecondary" gutterBottom>
-                Best Performance
+                {t('chapters.bestPerformance')}
               </Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: getScoreColor(quizResults.best_percentage || 0) }}>
                 {quizResults.best_score}/10
@@ -575,7 +576,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
 
             {/* Quiz History */}
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Attempt History
+              {t('chapters.attemptHistory')}
             </Typography>
             <Stack spacing={1} sx={{ mb: 3, maxHeight: 200, overflow: 'auto' }}>
               {quizResults.results_history.map((result, index) => (
@@ -599,7 +600,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
                       </Typography>
                       {result.is_best && (
                         <Chip
-                          label="Best"
+                          label={t('chapters.best')}
                           size="small"
                           color="success"
                           sx={{ height: 20, fontSize: '0.7rem' }}
@@ -630,7 +631,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
                 startIcon={<Quiz />}
                 sx={{ flex: 1 }}
               >
-                Retake Quiz
+                {t('chapters.retakeQuiz')}
               </Button>
             </Stack>
           </CardContent>
@@ -676,17 +677,17 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
             )}
             <Box>
               <Typography variant="h6" fontWeight="bold">
-                Topic Quiz
+                {t('chapters.topicQuiz')}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {allChaptersCompleted ? '10 Multiple Choice Questions' : 'Complete all chapters to unlock'}
+                {allChaptersCompleted ? t('chapters.multipleChoiceQuestions') : t('chapters.completeAllChapters')}
               </Typography>
             </Box>
           </Box>
 
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" sx={{ mb: 1, opacity: 0.9 }}>
-              Progress: {completedCount}/{totalCount} chapters completed
+              {t('chapters.progress', { completed: completedCount, total: totalCount })}
             </Typography>
             <Box
               sx={{
@@ -727,7 +728,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
                 }
               }}
             >
-              {allChaptersCompleted ? 'Take Quiz' : `Complete ${totalCount - completedCount} more chapters`}
+              {allChaptersCompleted ? t('chapters.takeQuiz') : t('chapters.completeMoreChapters', { count: totalCount - completedCount })}
             </Button>
             {allChaptersCompleted && (
               <Button
@@ -742,7 +743,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
                   }
                 }}
               >
-                Results
+                {t('chapters.results')}
               </Button>
             )}
           </Stack>

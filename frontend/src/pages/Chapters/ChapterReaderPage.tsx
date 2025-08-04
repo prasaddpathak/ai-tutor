@@ -28,6 +28,7 @@ import remarkGfm from 'remark-gfm'
 import { subjectsAPI, ChapterContentPage } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import ChapterChatPanel from '../../components/Chat/ChapterChatPanel'
+import { useTranslation } from 'react-i18next'
 
 const ChapterReaderPage: React.FC = () => {
   const navigate = useNavigate()
@@ -39,6 +40,7 @@ const ChapterReaderPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [isChatOpen, setIsChatOpen] = useState(false)
   
   const currentPage = parseInt(searchParams.get('page') || '1')
@@ -117,14 +119,14 @@ const ChapterReaderPage: React.FC = () => {
           onClick={handleBack}
           sx={{ mb: 3 }}
         >
-          Back to Chapters
+          {t('chapterReader.backToChapters')}
         </Button>
         <Card sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" color="error" gutterBottom>
-            Failed to load chapter content
+            {t('chapterReader.failedToLoad')}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            Please try again later or go back to chapters list
+            {t('chapterReader.failedToLoadDescription')}
           </Typography>
         </Card>
       </Container>
@@ -139,13 +141,13 @@ const ChapterReaderPage: React.FC = () => {
           onClick={handleBack}
           sx={{ mb: 3 }}
         >
-          Back to Chapters
+          {t('chapterReader.backToChapters')}
         </Button>
         <Card sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Box sx={{ textAlign: 'center' }}>
             <LinearProgress sx={{ width: 200, mb: 2 }} />
             <Typography variant="body2" color="textSecondary">
-              Loading chapter content...
+              {t('chapterReader.loadingContent')}
             </Typography>
           </Box>
         </Card>
@@ -167,7 +169,7 @@ const ChapterReaderPage: React.FC = () => {
           variant="outlined"
           sx={{ mb: 3 }}
         >
-          Back to Chapters
+          {t('chapterReader.backToChapters')}
         </Button>
 
         {/* Chapter Info */}
@@ -180,7 +182,7 @@ const ChapterReaderPage: React.FC = () => {
                   {chapterData.chapter_title}
                 </Typography>
                 <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-                  {chapterData.topic_title} • {chapterData.subject?.name || 'Subject'}
+                  {chapterData.topic_title} • {chapterData.subject?.name || t('chapterReader.subject')}
                 </Typography>
               </Box>
             </Stack>
@@ -191,7 +193,7 @@ const ChapterReaderPage: React.FC = () => {
                 sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
               />
               <Chip
-                label={`Page ${currentPage} of ${chapterData.total_pages}`}
+                label={t('chapterReader.page', { current: currentPage, total: chapterData.total_pages })}
                 sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
               />
             </Stack>
@@ -199,7 +201,7 @@ const ChapterReaderPage: React.FC = () => {
             {/* Progress Bar */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" sx={{ mb: 1, opacity: 0.9 }}>
-                Reading Progress: {progressPercentage}%
+                {t('chapterReader.progress', { percent: progressPercentage })}
               </Typography>
               <LinearProgress
                 variant="determinate"
@@ -332,13 +334,13 @@ const ChapterReaderPage: React.FC = () => {
               variant="outlined"
               size="large"
             >
-              Previous
+              {t('chapterReader.previous')}
             </Button>
 
             {/* Page Indicator */}
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h6" fontWeight="bold" color="primary">
-                Page {currentPage} of {chapterData.total_pages}
+                {t('chapterReader.page', { current: currentPage, total: chapterData.total_pages })}
               </Typography>
             </Box>
 
@@ -360,7 +362,7 @@ const ChapterReaderPage: React.FC = () => {
                   transition: 'all 0.2s ease-in-out',
                 }}
               >
-                {completeChapterMutation.isLoading ? 'Completing...' : 'Complete Chapter'}
+                {completeChapterMutation.isLoading ? t('chapterReader.completing') : t('chapterReader.completeChapter')}
               </Button>
             ) : (
               <Button
@@ -369,7 +371,7 @@ const ChapterReaderPage: React.FC = () => {
                 variant="contained"
                 size="large"
               >
-                Next
+                {t('chapterReader.next')}
               </Button>
             )}
           </Stack>

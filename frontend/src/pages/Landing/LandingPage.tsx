@@ -23,9 +23,11 @@ import {
   PsychologyOutlined,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const handleGetStarted = () => {
     navigate('/auth')
@@ -34,33 +36,33 @@ const LandingPage: React.FC = () => {
   const features = [
     {
       icon: <CameraAltOutlined sx={{ fontSize: 40 }} />,
-      title: 'Hassle-Free Login',
-      description: 'No passwords to remember! Simply look at your camera and get instant access',
+      title: t('landing.features.hassleFreLogin.title'),
+      description: t('landing.features.hassleFreLogin.description'),
     },
     {
       icon: <PsychologyOutlined sx={{ fontSize: 40 }} />,
-      title: 'AI-Powered Learning',
-      description: 'Personalized education experience powered by Google Gemma AI models',
+      title: t('landing.features.aiPowered.title'),
+      description: t('landing.features.aiPowered.description'),
     },
     {
       icon: <PersonalVideoOutlined sx={{ fontSize: 40 }} />,
-      title: 'Offline-First Design',
-      description: 'Learn anywhere, anytime - even without internet connectivity',
+      title: t('landing.features.offlineFirst.title'),
+      description: t('landing.features.offlineFirst.description'),
     },
     {
       icon: <QuizOutlined sx={{ fontSize: 40 }} />,
-      title: 'Interactive Assessments',
-      description: 'Engaging quizzes and exercises tailored to your learning progress',
+      title: t('landing.features.interactiveQuizzes.title'),
+      description: t('landing.features.interactiveQuizzes.description'),
     },
     {
       icon: <ViewInArOutlined sx={{ fontSize: 40 }} />,
-      title: 'Adaptive Learning Paths',
-      description: 'Dynamic content that adapts to your learning style and pace',
+      title: t('landing.features.adaptiveContent.title'),
+      description: t('landing.features.adaptiveContent.description'),
     },
     {
       icon: <AutoAwesomeOutlined sx={{ fontSize: 40 }} />,
-      title: 'Smart Tutoring',
-      description: 'Get instant help and explanations from your AI teaching assistant',
+      title: t('landing.features.smartTutoring.title'),
+      description: t('landing.features.smartTutoring.description'),
     },
   ]
 
@@ -117,7 +119,7 @@ const LandingPage: React.FC = () => {
                 },
               }}
             >
-              Get Started
+              {t('landing.getStarted')}
             </Button>
           </Box>
         </Container>
@@ -169,10 +171,7 @@ const LandingPage: React.FC = () => {
                     lineHeight: 1.2,
                   }}
                 >
-                  Learn with
-                  <Box component="span" sx={{ color: '#D3B651' }}>
-                    {' '}TerraTeach
-                  </Box>
+                  {t('landing.title')}
                 </Typography>
                 <Typography
                   variant="h5"
@@ -183,9 +182,7 @@ const LandingPage: React.FC = () => {
                     fontSize: { xs: '1.2rem', md: '1.5rem' },
                   }}
                 >
-                  Sustainable AI-powered education that grows with you. 
-                  Skip the hassle of passwords and usernames - just look at your camera 
-                  to access personalized learning powered by Google Gemma 3n running on NVIDIA Jetson Nano.
+                  {t('landing.description')}
                 </Typography>
                 <Stack direction="row" spacing={3}>
                   <Button
@@ -206,7 +203,7 @@ const LandingPage: React.FC = () => {
                       },
                     }}
                   >
-                    Start Learning Today
+                    {t('landing.getStarted')}
                   </Button>
                 </Stack>
               </motion.div>
@@ -271,14 +268,13 @@ const LandingPage: React.FC = () => {
                 gutterBottom
                 sx={{ color: '#0A5130' }}
               >
-                Why Choose TerraTeach?
+                {t('landing.whyChoose.title')}
               </Typography>
               <Typography
                 variant="h6"
                 sx={{ color: '#3B854E', maxWidth: 600, mx: 'auto' }}
               >
-                Our eco-friendly platform combines cutting-edge AI technology 
-                with sustainable learning practices for the future of education.
+                {t('landing.whyChoose.subtitle')}
               </Typography>
             </Box>
           </motion.div>
@@ -356,15 +352,13 @@ const LandingPage: React.FC = () => {
                 gutterBottom
                 sx={{ color: '#0A5130' }}
               >
-                Powered By
+                {t('landing.poweredBy.title')}
               </Typography>
               <Typography
                 variant="h6"
                 sx={{ color: '#3B854E', maxWidth: 700, mx: 'auto', mb: 6 }}
               >
-                TerraTeach harnesses the cutting-edge Google Gemma 3n language model 
-                running efficiently on NVIDIA Jetson Nano hardware, delivering powerful 
-                AI education while maintaining sustainability and offline capability.
+                {t('landing.poweredBy.description')}
               </Typography>
               
               {/* Technology Badges */}
@@ -384,7 +378,7 @@ const LandingPage: React.FC = () => {
                     Google Gemma 3n
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#3B854E', mt: 1 }}>
-                    Advanced AI Language Model
+                    {t('landing.poweredBy.gemma')}
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
@@ -402,7 +396,7 @@ const LandingPage: React.FC = () => {
                     NVIDIA Jetson Nano
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#3B854E', mt: 1 }}>
-                    Energy-Efficient Edge Computing
+                    {t('landing.poweredBy.jetson')}
                   </Typography>
                 </Box>
               </Box>
@@ -436,14 +430,13 @@ const LandingPage: React.FC = () => {
               gutterBottom
               sx={{ mb: 3 }}
             >
-              Ready to Transform Your Learning?
+              {t('landing.cta.title')}
             </Typography>
             <Typography
               variant="h6"
               sx={{ mb: 6, opacity: 0.9, maxWidth: 500, mx: 'auto' }}
             >
-              Join thousands of students already learning with TerraTeach's 
-              AI-powered, sustainable education platform.
+              {t('landing.cta.description')}
             </Typography>
             <Button
               variant="contained"
@@ -463,7 +456,7 @@ const LandingPage: React.FC = () => {
                 },
               }}
             >
-              Get Started - No Passwords Needed!
+              {t('landing.cta.button')}
             </Button>
           </motion.div>
         </Container>
@@ -485,8 +478,7 @@ const LandingPage: React.FC = () => {
                 </Typography>
               </Box>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                Sustainable AI-powered education for a greener future. 
-                Powered by Google Gemma 3n on NVIDIA Jetson Nano with eco-friendly principles.
+                {t('landing.footer.description')}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -511,7 +503,7 @@ const LandingPage: React.FC = () => {
                   variant="body2"
                   sx={{ opacity: 0.6, mt: 2 }}
                 >
-                  © 2024 TerraTeach. All rights reserved.
+                  {t('landing.footer.copyright')}
                 </Typography>
               </Box>
             </Grid>

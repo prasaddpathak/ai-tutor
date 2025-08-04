@@ -18,6 +18,7 @@ import { AutoAwesome, CheckCircle, School, TrendingUp } from '@mui/icons-materia
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from 'react-query'
+import { useTranslation } from 'react-i18next'
 
 import { subjectsAPI, studentsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
@@ -27,6 +28,7 @@ import AddSubjectModal from '../../components/SubjectCreation/AddSubjectModal'
 const SubjectsPage: React.FC = () => {
   const navigate = useNavigate()
   const student = useAuthStore((state) => state.student)
+  const { t } = useTranslation()
   const [difficultyModalOpen, setDifficultyModalOpen] = React.useState(false)
   const [selectedSubject, setSelectedSubject] = React.useState<{id: number, name: string} | null>(null)
   const [addSubjectModalOpen, setAddSubjectModalOpen] = React.useState(false)
@@ -164,7 +166,7 @@ const SubjectsPage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">
-          Failed to load subjects. Please try again later.
+          {t('errors.generic')}
         </Alert>
       </Container>
     )
@@ -203,16 +205,16 @@ const SubjectsPage: React.FC = () => {
             </Grid>
             <Grid item xs>
               <Typography variant="h4" fontWeight="bold" gutterBottom>
-                Welcome back, {student?.name}!
+                {t('subjects.welcomeBack', { name: student?.name })}
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.9, mb: 1 }}>
-                Ready to continue your learning journey?
+                {t('subjects.readyToContinue')}
               </Typography>
               {dashboardData?.stats?.subjects_started > 0 && (
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <Chip
                     icon={<TrendingUp sx={{ color: 'white !important' }} />}
-                    label={`${dashboardData.stats.subjects_started} subjects started`}
+                    label={t('subjects.subjectsStarted', { count: dashboardData.stats.subjects_started })}
                     sx={{ 
                       bgcolor: 'rgba(255, 255, 255, 0.2)', 
                       color: 'white' 
@@ -233,10 +235,10 @@ const SubjectsPage: React.FC = () => {
       >
         <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Choose Your Subject
+            {t('subjects.title')}
           </Typography>
           <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
-            Select a subject to explore AI-generated curriculum tailored to your level
+            {t('subjects.subtitle')}
           </Typography>
           
           <Button
@@ -259,7 +261,7 @@ const SubjectsPage: React.FC = () => {
               },
             }}
           >
-            Add New Subject with AI
+            {t('subjects.addNewSubject')}
           </Button>
         </Box>
       </motion.div>
@@ -394,7 +396,7 @@ const SubjectsPage: React.FC = () => {
                           handleSubjectClick(subject)
                         }}
                       >
-                        {subject.difficulty_level ? 'Explore Topics' : 'Choose Difficulty'}
+                        {subject.difficulty_level ? t('subjects.explore') : t('subjects.selectDifficulty')}
                       </Button>
                     </Box>
                   </CardContent>
@@ -414,10 +416,10 @@ const SubjectsPage: React.FC = () => {
         >
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h5" gutterBottom>
-              No subjects available
+              {t('subjects.noSubjects')}
             </Typography>
             <Typography variant="body1" color="textSecondary">
-              Subjects will be loaded from the database. Please check your backend connection.
+              {t('subjects.noSubjectsDescription')}
             </Typography>
           </Box>
         </motion.div>

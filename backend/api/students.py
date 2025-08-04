@@ -13,7 +13,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from backend.core.database import db
-from backend.models.auth import StudentResponse
+from backend.models.auth import StudentResponse, UpdateLanguageRequest
 from backend.models.curriculum import StudentProgress, UpdateProgressRequest
 
 router = APIRouter()
@@ -66,6 +66,23 @@ async def update_student_progress(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update progress: {str(e)}")
+
+@router.put("/{student_id}/language")
+async def update_student_language(student_id: int, language_data: UpdateLanguageRequest):
+    """Update student's language preference."""
+    try:
+        # Verify student exists
+        student = db.get_connection().execute("SELECT * FROM students WHERE id = ?", (student_id,)).fetchone()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+        
+        # Update language preference
+        db.update_student_language(student_id, language_data.language_preference)
+        
+        return {"message": "Language preference updated successfully"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update language: {str(e)}")
 
 @router.get("/{student_id}/dashboard")
 async def get_student_dashboard(student_id: int):

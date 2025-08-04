@@ -30,12 +30,14 @@ import { useQuery, useMutation, useQueryClient } from 'react-query'
 
 import { subjectsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import { useTranslation } from 'react-i18next'
 
 const TopicsPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId } = useParams<{ subjectId: string }>()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
 
   const { data: topicsData, isLoading, error, refetch } = useQuery(
@@ -118,10 +120,10 @@ const TopicsPage: React.FC = () => {
           onClick={handleBack}
           sx={{ mb: 3 }}
         >
-          Back to Subjects
+          {t('topics.backToSubjects')}
         </Button>
         <Alert severity="error">
-          Failed to load topics. Please try again later.
+          {t('topics.failedToLoad')}
         </Alert>
       </Container>
     )
@@ -140,13 +142,13 @@ const TopicsPage: React.FC = () => {
           onClick={handleBack}
           sx={{ mb: 3 }}
         >
-          Back to Subjects
+          {t('topics.backToSubjects')}
         </Button>
 
         <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
             <Typography variant="h3" fontWeight="bold">
-              {topicsData?.subject?.name || 'Topics'}
+              {topicsData?.subject?.name || t('topics.title')}
             </Typography>
             {/* Difficulty Level Display */}
             {topicsData?.subject?.difficulty_level && (
@@ -172,7 +174,7 @@ const TopicsPage: React.FC = () => {
             )}
             {/* Only show regenerate button if content exists and not currently generating */}
             {topicsData?.is_generated && !isCurrentlyGenerating() && (
-              <Tooltip title="Regenerate topics with fresh AI content">
+              <Tooltip title={t('topics.regenerateTooltip')}>
                 <IconButton
                   onClick={handleRegenerate}
                   color="primary"
@@ -188,7 +190,7 @@ const TopicsPage: React.FC = () => {
             )}
           </Box>
           <Typography variant="h6" color="textSecondary">
-            {isLoading ? 'Loading topics...' : 'Choose a topic to explore detailed chapters'}
+            {isLoading ? t('topics.loadingTopics') : t('topics.chooseTopicToExplore')}
           </Typography>
         </Box>
       </motion.div>
@@ -217,10 +219,10 @@ const TopicsPage: React.FC = () => {
           <Card sx={{ mb: 3, p: 3, textAlign: 'center' }}>
             <CircularProgress sx={{ mb: 2 }} />
             <Typography variant="h6" gutterBottom>
-              Generating Curriculum...
+              {t('topics.generatingCurriculum')}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Our AI is creating personalized topics for your level. This may take a moment.
+              {t('topics.aiCreatingTopics')}
             </Typography>
           </Card>
         </motion.div>
@@ -235,7 +237,7 @@ const TopicsPage: React.FC = () => {
         >
           <Card sx={{ mb: 3, p: 3, textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom color="warning.main">
-              Difficulty Level Required
+              {t('topics.difficultyRequired')}
             </Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
               {topicsData.message}
@@ -245,7 +247,7 @@ const TopicsPage: React.FC = () => {
               onClick={() => navigate('/subjects')}
               sx={{ mt: 1 }}
             >
-              Back to Subjects
+              {t('topics.backToSubjects')}
             </Button>
           </Card>
         </motion.div>
@@ -287,7 +289,7 @@ const TopicsPage: React.FC = () => {
                           {topic.title}
                         </Typography>
                         {hasChapters && (
-                          <Tooltip title="This topic has chapters generated">
+                          <Tooltip title={t('topics.hasChaptersTooltip')}>
                             <CheckCircle sx={{ color: 'green', fontSize: '1.2rem' }} />
                           </Tooltip>
                         )}
@@ -322,13 +324,13 @@ const TopicsPage: React.FC = () => {
         >
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h5" gutterBottom>
-              No topics available
+              {t('topics.noTopics')}
             </Typography>
             <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
-              We couldn't generate topics for this subject. Please try again or contact support.
+              {t('topics.noTopicsDescription')}
             </Typography>
             <Button variant="contained" onClick={handleBack}>
-              Choose Another Subject
+              {t('topics.chooseAnotherSubject')}
             </Button>
           </Box>
         </motion.div>
@@ -341,17 +343,15 @@ const TopicsPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Regenerate Topics?</DialogTitle>
+        <DialogTitle>{t('topics.regenerateDialog.title')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This will generate fresh AI content for all topics in this subject. 
-            The current topics will be replaced. This process may take a few minutes.
-            Are you sure you want to continue?
+            {t('topics.regenerateDialog.description')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRegenerateDialogOpen(false)}>
-            Cancel
+            {t('topics.regenerateDialog.cancel')}
           </Button>
           <Button 
             onClick={confirmRegenerate} 
@@ -359,7 +359,7 @@ const TopicsPage: React.FC = () => {
             color="primary"
             disabled={regenerateTopicsMutation.isLoading}
           >
-            {regenerateTopicsMutation.isLoading ? 'Regenerating...' : 'Regenerate'}
+            {regenerateTopicsMutation.isLoading ? t('topics.regenerateDialog.regenerating') : t('topics.regenerateDialog.confirm')}
           </Button>
         </DialogActions>
       </Dialog>

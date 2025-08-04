@@ -10,6 +10,7 @@ import {
   Breadcrumbs,
   Link,
   Button,
+  Divider,
 } from '@mui/material'
 import {
   AccountCircle,
@@ -19,13 +20,16 @@ import {
 } from '@mui/icons-material'
 import { useLocation, useNavigate, Link as RouterLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 import { useAuthStore } from '../../stores/authStore'
+import LanguageSelector from '../LanguageSelector'
 
 const Navbar: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   
   const { student, logout } = useAuthStore()
 
@@ -47,7 +51,7 @@ const Navbar: React.FC = () => {
   const generateBreadcrumbs = () => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
     const breadcrumbs = [
-      { label: 'Subjects', path: '/subjects', icon: <School fontSize="small" /> }
+      { label: t('navigation.subjects'), path: '/subjects', icon: <School fontSize="small" /> }
     ]
 
     if (pathSegments.includes('subjects')) {
@@ -56,10 +60,10 @@ const Navbar: React.FC = () => {
         const subjectId = pathSegments[1]
         
         if (pathSegments.includes('topics')) {
-          breadcrumbs.push({ label: 'Topics', path: `/subjects/${subjectId}/topics`, icon: <School fontSize="small" /> })
+          breadcrumbs.push({ label: t('navigation.topics'), path: `/subjects/${subjectId}/topics`, icon: <School fontSize="small" /> })
           
           if (pathSegments.includes('chapters')) {
-            breadcrumbs.push({ label: 'Chapters', path: location.pathname, icon: <School fontSize="small" /> })
+            breadcrumbs.push({ label: t('navigation.chapters'), path: location.pathname, icon: <School fontSize="small" /> })
           }
         }
       }
@@ -107,7 +111,7 @@ const Navbar: React.FC = () => {
               style={{ height: 40, width: 40, marginRight: 16 }}
             />
             <Typography variant="h6" fontWeight="bold" sx={{ color: '#0A5130' }}>
-              TerraTeach
+              {t('navigation.brand')}
             </Typography>
           </Box>
         </motion.div>
@@ -149,6 +153,9 @@ const Navbar: React.FC = () => {
 
         {/* User Profile Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Language Selector */}
+          <LanguageSelector size="medium" />
+          
           {/* User Menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button
@@ -194,11 +201,12 @@ const Navbar: React.FC = () => {
           >
             <MenuItem onClick={handleMenuClose} sx={{ py: 1.5 }}>
               <AccountCircle sx={{ mr: 2 }} />
-              Profile
+              {t('navigation.profile')}
             </MenuItem>
+            <Divider />
             <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: 'error.main' }}>
               <Logout sx={{ mr: 2 }} />
-              Logout
+              {t('navigation.logout')}
             </MenuItem>
           </Menu>
         </Box>

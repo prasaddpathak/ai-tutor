@@ -38,6 +38,7 @@ import toast from 'react-hot-toast'
 
 import { subjectsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import { useTranslation } from 'react-i18next'
 
 interface SubjectRecommendation {
   name: string
@@ -59,8 +60,9 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
   
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
-  const steps = ['Describe Your Interest', 'AI Recommendations', 'Confirm Subject']
+  const steps = [t('subjects.addSubjectModal.steps.describe'), t('subjects.addSubjectModal.steps.recommendations'), t('subjects.addSubjectModal.steps.confirm')]
 
   // Get AI recommendations mutation
   const getRecommendationsMutation = useMutation(
@@ -73,7 +75,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
         setIsLoadingRecommendations(false)
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || 'Failed to get AI recommendations')
+        toast.error(error.response?.data?.detail || t('subjects.addSubjectModal.errors.noRecommendations'))
         setIsLoadingRecommendations(false)
       }
     }
@@ -91,13 +93,13 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
       ),
     {
       onSuccess: (response) => {
-        toast.success(`Subject "${selectedRecommendation?.name}" created successfully!`)
+        toast.success(t('subjects.addSubjectModal.success.created', { name: selectedRecommendation?.name }))
         queryClient.invalidateQueries(['subjects', student!.id])
         onClose()
         resetModal()
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || 'Failed to create subject')
+        toast.error(error.response?.data?.detail || t('subjects.addSubjectModal.errors.createFailed'))
       }
     }
   )
@@ -119,7 +121,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
 
   const handleGetRecommendations = () => {
     if (userRequest.trim().length < 5) {
-      toast.error('Please provide a more detailed description (at least 5 characters)')
+      toast.error(t('subjects.addSubjectModal.errors.minLength'))
       return
     }
     
@@ -197,10 +199,10 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
         <AutoAwesome sx={{ fontSize: 36, opacity: 0.9 }} />
         <Box>
           <Typography variant="h5" fontWeight="bold" component="div">
-            Create Your Subject
+            {t('subjects.addSubjectModal.title')}
           </Typography>
           <Typography variant="body1" sx={{ opacity: 0.9 }} component="div">
-            AI-powered personalized learning experience
+            {t('subjects.addSubjectModal.subtitle')}
           </Typography>
         </Box>
       </DialogTitle>
@@ -278,10 +280,10 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                           <Lightbulb sx={{ fontSize: 32, color: 'white' }} />
                         </Box>
                         <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
-                          What would you like to learn?
+                          {t('subjects.addSubjectModal.step1.title')}
                         </Typography>
                         <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 700, mx: 'auto', lineHeight: 1.5 }}>
-                          Describe your learning interests in natural language. Our AI will recommend personalized subjects for you.
+                          {t('subjects.addSubjectModal.step1.description')}
                         </Typography>
                       </Box>
 
@@ -291,7 +293,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                         rows={4}
                         value={userRequest}
                         onChange={(e) => setUserRequest(e.target.value)}
-                        placeholder="For example: 'I want to learn about building websites and web applications' or 'I'm interested in understanding how the human brain works'..."
+                        placeholder={t('subjects.addSubjectModal.step1.placeholder')}
                         variant="outlined"
                         sx={{ 
                           mb: 4,
@@ -310,17 +312,10 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
 
                       <Box sx={{ textAlign: 'left' }}>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 2, fontWeight: 600 }}>
-                          💡 Need inspiration? Try these examples:
+                          {t('subjects.addSubjectModal.step1.inspiration')}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-                          {[
-                            'Data analysis and visualization',
-                            'Mobile app development', 
-                            'Psychology and human behavior',
-                            'Renewable energy systems',
-                            'Digital marketing strategies',
-                            'Artificial intelligence basics'
-                          ].map((example) => (
+                          {t('subjects.addSubjectModal.step1.examples', { returnObjects: true }).map((example: string) => (
                             <Chip
                               key={example}
                               label={example}
@@ -366,10 +361,10 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                         />
                       </Box>
                       <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
-                        AI is working its magic...
+                        {t('subjects.addSubjectModal.step1.loading.title')}
                       </Typography>
                       <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 600, mx: 'auto', lineHeight: 1.5, mb: 3 }}>
-                        Analyzing your request and generating personalized subject recommendations.
+                        {t('subjects.addSubjectModal.step1.loading.description')}
                       </Typography>
                       
                       {/* Show user's input for reference */}
@@ -383,7 +378,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                         mx: 'auto'
                       }}>
                         <Typography variant="body2" fontWeight="600" color="textSecondary" sx={{ mb: 1 }}>
-                          📝 Your Request:
+                          {t('subjects.addSubjectModal.step1.loading.yourRequest')}
                         </Typography>
                         <Typography variant="body1" sx={{ fontStyle: 'italic', lineHeight: 1.5 }}>
                           "{userRequest}"
@@ -425,10 +420,10 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                       <AutoAwesome sx={{ fontSize: 32, color: 'white' }} />
                     </Box>
                     <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
-                      AI-Recommended Subjects
+                      {t('subjects.addSubjectModal.step2.title')}
                     </Typography>
                     <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 700, mx: 'auto' }}>
-                      Based on your interest: <em>"{userRequest}"</em>
+                      {t('subjects.addSubjectModal.step2.description', { request: userRequest })}
                     </Typography>
                   </Box>
 
@@ -523,7 +518,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                                 flexDirection: 'column'
                               }}>
                                 <Typography variant="body2" fontWeight="600" sx={{ mb: 2 }}>
-                                  🎯 Perfect for you because:
+                                  {t('subjects.addSubjectModal.step2.perfectFor')}
                                 </Typography>
                                 <Typography 
                                   variant="body2" 
@@ -567,7 +562,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                                   }
                                 }}
                               >
-                                Choose This Subject
+                                {t('subjects.addSubjectModal.step2.chooseSubject')}
                               </Button>
                             </CardActions>
                           </Card>
@@ -611,10 +606,10 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                       <CheckCircle sx={{ fontSize: 40, color: 'white' }} />
                     </Box>
                     <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
-                      Ready to Create Subject
+                      {t('subjects.addSubjectModal.step3.title')}
                     </Typography>
                     <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 700, mx: 'auto', lineHeight: 1.5 }}>
-                      Review your selection and create your personalized learning journey
+                      {t('subjects.addSubjectModal.step3.description')}
                     </Typography>
                   </Box>
 
@@ -656,7 +651,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                         mb: 2
                       }}>
                         <Typography variant="body2" fontWeight="600" color="textSecondary" sx={{ mb: 1 }}>
-                          📝 Your Original Request:
+                          {t('subjects.addSubjectModal.step3.originalRequest')}
                         </Typography>
                         <Typography variant="body2" sx={{ fontStyle: 'italic', lineHeight: 1.5 }}>
                           "{userRequest}"
@@ -670,7 +665,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                         borderRadius: 2
                       }}>
                         <Typography variant="body2" fontWeight="600" sx={{ mb: 1 }}>
-                          🎯 Why this subject is perfect for you:
+                          {t('subjects.addSubjectModal.step3.whyPerfect')}
                         </Typography>
                         <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.9rem' }}>
                           {selectedRecommendation.relevance_explanation}
@@ -711,7 +706,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
             }
           }}
         >
-          {activeStep === 0 ? 'Cancel' : 'Back'}
+          {activeStep === 0 ? t('subjects.addSubjectModal.buttons.cancel') : t('subjects.addSubjectModal.buttons.back')}
         </Button>
 
         <Box sx={{ display: 'flex', gap: 2 }}>
@@ -742,7 +737,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                 }
               }}
             >
-              {isLoadingRecommendations ? 'Generating...' : 'Get AI Recommendations'}
+              {isLoadingRecommendations ? t('subjects.addSubjectModal.buttons.generating') : t('subjects.addSubjectModal.buttons.getRecommendations')}
             </Button>
           )}
 
@@ -773,7 +768,7 @@ const AddSubjectModal: React.FC<AddSubjectModalProps> = ({ open, onClose }) => {
                 }
               }}
             >
-              {createSubjectMutation.isLoading ? 'Creating...' : 'Create Subject'}
+              {createSubjectMutation.isLoading ? t('subjects.addSubjectModal.buttons.creating') : t('subjects.addSubjectModal.buttons.createSubject')}
             </Button>
           )}
         </Box>

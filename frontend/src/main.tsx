@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from 'react-query'
 import { ThemeProvider, CssBaseline, createTheme } from '@mui/material'
 import { Toaster } from 'react-hot-toast'
 
+// Import i18n configuration (must be imported before App)
+import './i18n'
+
 import App from './App'
 import './index.css'
 

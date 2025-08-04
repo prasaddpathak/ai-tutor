@@ -1,0 +1,368 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "submit": "Enviar",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "view": "Ver",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "clear": "Limpiar",
+    "select": "Seleccionar",
+    "none": "Ninguno",
+    "all": "Todos",
+    "yes": "Sí",
+    "no": "No",
+    "confirm": "Confirmar",
+    "success": "Éxito",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "navigation": {
+    "brand": "TerraTeach",
+    "subjects": "Materias",
+    "topics": "Temas", 
+    "chapters": "Capítulos",
+    "profile": "Perfil",
+    "logout": "Cerrar Sesión",
+    "language": "Idioma"
+  },
+  "landing": {
+    "title": "Aprende con TerraTeach",
+    "subtitle": "Aprendizaje personalizado impulsado por IA, diseñado para funcionar completamente sin conexión",
+    "description": "Educación sostenible impulsada por IA que crece contigo. Olvídate de contraseñas y nombres de usuario - solo mira a tu cámara para acceder al aprendizaje personalizado impulsado por Google Gemma 3n ejecutándose en NVIDIA Jetson Nano.",
+    "getStarted": "Comenzar",
+    "learnMore": "Saber Más",
+    "features": {
+      "hassleFreLogin": {
+        "title": "Inicio de Sesión Sin Complicaciones",
+        "description": "¡No hay contraseñas que recordar! Simplemente mira a tu cámara y obtén acceso instantáneo"
+      },
+      "aiPowered": {
+        "title": "Aprendizaje Impulsado por IA", 
+        "description": "Experiencia educativa personalizada impulsada por modelos de IA Google Gemma"
+      },
+      "offlineFirst": {
+        "title": "Diseño Sin Conexión",
+        "description": "Aprende en cualquier lugar, en cualquier momento, incluso sin conectividad a internet"
+      },
+      "adaptiveContent": {
+        "title": "Contenido Adaptivo",
+        "description": "La dificultad del contenido se ajusta automáticamente según tu progreso de aprendizaje"
+      },
+      "interactiveQuizzes": {
+        "title": "Cuestionarios Interactivos",
+        "description": "Pon a prueba tus conocimientos con cuestionarios generados por IA y retroalimentación instantánea"
+      },
+      "progressTracking": {
+        "title": "Seguimiento del Progreso",
+        "description": "Seguimiento visual del progreso en materias, temas y capítulos"
+      },
+      "smartTutoring": {
+        "title": "Tutoría Inteligente",
+        "description": "Obtén ayuda instantánea y explicaciones de tu asistente de enseñanza IA"
+      }
+    },
+    "whyChoose": {
+      "title": "¿Por qué Elegir TerraTeach?",
+      "subtitle": "Nuestra plataforma ecológica combina tecnología de IA de vanguardia con prácticas de aprendizaje sostenibles para el futuro de la educación."
+    },
+    "poweredBy": {
+      "title": "Impulsado Por",
+      "description": "TerraTeach aprovecha el modelo de lenguaje Google Gemma 3n de vanguardia ejecutándose eficientemente en hardware NVIDIA Jetson Nano, ofreciendo educación IA poderosa mientras mantiene sostenibilidad y capacidad sin conexión.",
+      "gemma": "Modelo de Lenguaje IA Avanzado",
+      "jetson": "Computación de Borde Eficiente en Energía"
+    },
+    "cta": {
+      "title": "¿Listo para Transformar tu Aprendizaje?",
+      "description": "Únete a miles de estudiantes que ya están aprendiendo con la plataforma educativa sostenible e impulsada por IA de TerraTeach.",
+      "button": "Comenzar - ¡No Necesitas Contraseñas!"
+    },
+    "footer": {
+      "description": "Educación sostenible impulsada por IA para un futuro más verde. Impulsado por Google Gemma 3n en NVIDIA Jetson Nano con principios ecológicos.",
+      "copyright": "© 2024 TerraTeach. Todos los derechos reservados."
+    }
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "welcome": "Bienvenido de Vuelta",
+    "getStarted": "Comencemos",
+    "loginDescription": "Usa reconocimiento facial para acceder de forma segura a tu panel de aprendizaje",
+    "registerDescription": "Crea tu perfil de aprendizaje personalizado en segundos",
+    "nameLabel": "Nombre Completo",
+    "namePlaceholder": "Ingresa tu nombre completo",
+    "nameRequired": "El nombre es obligatorio",
+    "nameTooLong": "Nombre demasiado largo",
+    "faceCapture": "Captura Facial",
+    "capturePhoto": "Capturar Foto",
+    "retakePhoto": "Tomar Foto de Nuevo",
+    "photoRequired": "Se requiere una foto para el registro",
+    "processing": "Procesando...",
+    "registering": "Creando Cuenta...",
+    "loggingIn": "Iniciando Sesión...",
+    "authError": "Error de autenticación. Por favor intenta de nuevo.",
+    "registrationSuccess": "¡Cuenta creada exitosamente!",
+    "loginSuccess": "¡Bienvenido de vuelta!",
+    "photoRequired": "Por favor captura una foto primero",
+    "nameRequired": "El nombre es obligatorio",
+    "nameTooLong": "Nombre demasiado largo"
+  },
+  "subjects": {
+    "title": "Elige tu Materia",
+    "subtitle": "Selecciona una materia para explorar currículum generado por IA adaptado a tu nivel",
+    "welcomeBack": "¡Bienvenido de vuelta, {{name}}!",
+    "readyToContinue": "¿Listo para continuar tu viaje de aprendizaje?",
+    "subjectsStarted": "{{count}} materias iniciadas",
+    "addNewSubject": "Agregar Nueva Materia con IA",
+    "addSubjectModal": {
+      "title": "Crear Tu Materia",
+      "subtitle": "Experiencia de aprendizaje personalizada impulsada por IA",
+      "steps": {
+        "describe": "Describe Tu Interés",
+        "recommendations": "Recomendaciones de IA",
+        "confirm": "Confirmar Materia"
+      },
+      "step1": {
+        "title": "¿Qué te gustaría aprender?",
+        "description": "Describe tus intereses de aprendizaje en lenguaje natural. Nuestra IA recomendará materias personalizadas para ti.",
+        "placeholder": "Por ejemplo: 'Quiero aprender sobre construcción de sitios web y aplicaciones web' o 'Me interesa entender cómo funciona el cerebro humano'...",
+        "inspiration": "💡 ¿Necesitas inspiración? Prueba estos ejemplos:",
+        "examples": [
+          "Análisis y visualización de datos",
+          "Desarrollo de aplicaciones móviles",
+          "Psicología y comportamiento humano",
+          "Sistemas de energía renovable",
+          "Estrategias de marketing digital",
+          "Fundamentos de inteligencia artificial"
+        ],
+        "loading": {
+          "title": "La IA está haciendo su magia...",
+          "description": "Analizando tu solicitud y generando recomendaciones de materias personalizadas.",
+          "yourRequest": "📝 Tu Solicitud:"
+        }
+      },
+      "step2": {
+        "title": "Materias Recomendadas por IA",
+        "description": "Basado en tu interés: \"{request}\"",
+        "perfectFor": "🎯 Perfecto para ti porque:",
+        "chooseSubject": "Elegir Esta Materia"
+      },
+      "step3": {
+        "title": "Listo para Crear Materia",
+        "description": "Revisa tu selección y crea tu viaje de aprendizaje personalizado",
+        "originalRequest": "📝 Tu Solicitud Original:",
+        "whyPerfect": "🎯 Por qué esta materia es perfecta para ti:"
+      },
+      "buttons": {
+        "cancel": "Cancelar",
+        "back": "Atrás",
+        "getRecommendations": "Obtener Recomendaciones de IA",
+        "generating": "Generando...",
+        "createSubject": "Crear Materia",
+        "creating": "Creando..."
+      },
+      "errors": {
+        "minLength": "Por favor proporciona una descripción más detallada (al menos 5 caracteres)",
+        "noRecommendations": "Error al obtener recomendaciones de IA",
+        "createFailed": "Error al crear la materia"
+      },
+      "success": {
+        "created": "¡Materia \"{name}\" creada exitosamente!"
+      }
+    },
+    "noSubjects": "No hay materias disponibles",
+    "noSubjectsDescription": "Las materias se cargarán desde la base de datos. Por favor verifica tu conexión de backend.",
+    "explore": "Explorar Temas",
+    "difficulty": {
+      "foundation": "Básico",
+      "intermediate": "Intermedio", 
+      "advanced": "Avanzado",
+      "expert": "Experto"
+    },
+    "progress": "Progreso",
+    "selectDifficulty": "Elegir Dificultad",
+    "startLearning": "Comenzar a Aprender",
+    "chooseDifficulty": "Elegir Dificultad",
+    "forSubject": "para {{subject}}",
+    "difficultyInstruction": "Selecciona el nivel de dificultad de aprendizaje que mejor se adapte a tu nivel de conocimiento actual. Esto nos ayudará a personalizar el contenido para brindarte la experiencia de aprendizaje más efectiva.",
+    "difficultyChangeLater": "¡No te preocupes - siempre puedes cambiar esto más tarde en tu configuración!",
+    "difficultySet": "Dificultad establecida en {{difficulty}}",
+    "difficultyError": "Error al establecer la dificultad. Por favor intenta de nuevo.",
+    "continueLearning": "Continuar Aprendiendo",
+    "setting": "Estableciendo...",
+    "difficulty": {
+      "foundationDesc": "Perfecto para principiantes con poco o ningún conocimiento previo. Comenzaremos con lo básico y avanzaremos gradualmente.",
+      "intermediateDesc": "Excelente para estudiantes con algo de comprensión básica que quieren expandir sus conocimientos y habilidades.",
+      "advancedDesc": "Ideal para estudiantes experimentados listos para abordar conceptos complejos y aplicaciones avanzadas.",
+      "expertDesc": "Para maestros que buscan conocimientos de vanguardia y el contenido más desafiante disponible."
+    }
+  },
+  "topics": {
+    "title": "Temas",
+    "subtitle": "Explora diferentes aspectos de {{subject}}",
+    "noTopics": "No hay temas disponibles",
+    "backToSubjects": "Volver a Materias",
+    "viewChapters": "Ver Capítulos",
+    "topicsGenerated": "{{count}} temas generados",
+    "difficulty": "Dificultad: {{level}}",
+    "loadingTopics": "Cargando temas...",
+    "chooseTopicToExplore": "Elige un tema para explorar capítulos detallados",
+    "regenerateTooltip": "Regenerar temas con contenido IA nuevo",
+    "generatingCurriculum": "Generando Currículum...",
+    "aiCreatingTopics": "Nuestra IA está creando temas personalizados para tu nivel. Esto puede tomar un momento.",
+    "difficultyRequired": "Nivel de Dificultad Requerido",
+    "failedToLoad": "Error al cargar temas. Por favor intenta de nuevo más tarde.",
+    "noTopicsDescription": "No pudimos generar temas para esta materia. Por favor intenta de nuevo o contacta soporte.",
+    "chooseAnotherSubject": "Elegir Otra Materia",
+    "hasChaptersTooltip": "Este tema tiene capítulos generados",
+    "regenerateDialog": {
+      "title": "¿Regenerar Temas?",
+      "description": "Esto generará contenido IA nuevo para todos los temas en esta materia. Los temas actuales serán reemplazados. Este proceso puede tomar unos minutos. ¿Estás seguro de que quieres continuar?",
+      "cancel": "Cancelar",
+      "confirm": "Regenerar",
+      "regenerating": "Regenerando..."
+    }
+  },
+  "chapters": {
+    "title": "Capítulos",
+    "subtitle": "Profundiza en {{topic}}",
+    "noChapters": "No hay capítulos disponibles", 
+    "backToTopics": "Volver a Temas",
+    "readChapter": "Leer Capítulo",
+    "completed": "Completado",
+    "inProgress": "En Progreso",
+    "notStarted": "No Iniciado",
+    "chaptersGenerated": "{{count}} capítulos disponibles",
+    "takeQuiz": "Tomar Cuestionario",
+    "quizUnlocked": "¡Cuestionario Desbloqueado!",
+    "completeChapters": "Completa todos los capítulos para desbloquear el cuestionario",
+    "loadingChapters": "Cargando capítulos...",
+    "selectChapterToRead": "Selecciona un capítulo para leer el contenido",
+    "difficultyRequired": "Nivel de Dificultad Requerido",
+    "backToSubjects": "Volver a Materias",
+    "regenerateTooltip": "Regenerar capítulos con contenido IA nuevo",
+    "generatingChapters": "Generando capítulos con IA...",
+    "generatingMayTake": "Esto puede tomar hasta 5-10 minutos",
+    "failedToLoad": "Error al cargar capítulos. Por favor intenta de nuevo más tarde.",
+    "selectAChapter": "Seleccionar un Capítulo",
+    "chooseChapterToView": "Elige un capítulo de la lista para ver su contenido detallado",
+    "readFullChapter": "Leer Capítulo Completo",
+    "topicQuiz": "Cuestionario del Tema",
+    "multipleChoiceQuestions": "10 Preguntas de Opción Múltiple",
+    "completeAllChapters": "Completa todos los capítulos para desbloquear",
+    "progress": "Progreso: {{completed}}/{{total}} capítulos completados",
+    "completeMoreChapters": "Completa {{count}} capítulos más",
+    "retakeQuiz": "Volver a Tomar Cuestionario",
+    "results": "Resultados",
+    "quizResults": "Resultados del Cuestionario",
+    "attempt": "intento",
+    "attempts": "intentos",
+    "bestScore": "Mejor Puntuación",
+    "bestPerformance": "Mejor Rendimiento",
+    "attemptHistory": "Historial de Intentos",
+    "best": "Mejor",
+    "regenerateDialog": {
+      "title": "¿Regenerar Capítulos?",
+      "description": "Esto generará contenido IA nuevo para todos los capítulos en este tema. Los capítulos actuales serán reemplazados. Este proceso puede tomar varios minutos. ¿Estás seguro de que quieres continuar?",
+      "cancel": "Cancelar",
+      "confirm": "Regenerar",
+      "regenerating": "Regenerando..."
+    }
+  },
+  "chapterReader": {
+    "title": "Leyendo",
+    "backToChapters": "Volver a Capítulos",
+    "page": "Página {{current}} de {{total}}",
+    "progress": "Progreso de Lectura: {{percent}}%",
+    "completeChapter": "Completar Capítulo",
+    "completing": "Completando...",
+    "nextPage": "Página Siguiente",
+    "previousPage": "Página Anterior",
+    "loadingContent": "Cargando contenido del capítulo...",
+    "failedToLoad": "Error al cargar el contenido del capítulo",
+    "failedToLoadDescription": "Por favor intenta de nuevo más tarde o vuelve a la lista de capítulos",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "subject": "Materia"
+  },
+  "chat": {
+    "title": "Tutor IA",
+    "placeholder": "Pregunta sobre este capítulo...",
+    "emptyState": "¡Pregúntame cualquier cosa sobre este capítulo!",
+    "contextInfo": "Tengo contexto sobre el contenido que estás leyendo.",
+    "page": "Página {{number}}"
+  },
+  "quiz": {
+    "title": "Cuestionario",
+    "subtitle": "Pon a prueba tus conocimientos de {{topic}}",
+    "backToChapters": "Volver a Capítulos",
+    "question": "Pregunta {{current}} de {{total}}",
+    "progress": "Progreso: {{answered}}/{{total}}",
+    "timeElapsed": "Tiempo: {{time}}",
+    "bestScore": "Mejor: {{score}}%",
+    "submitQuiz": "Enviar Cuestionario",
+    "nextQuestion": "Siguiente",
+    "previousQuestion": "Anterior", 
+    "loadingQuiz": "Cargando preguntas del cuestionario...",
+    "failedToLoad": "Error al cargar cuestionario. Por favor asegúrate de que todos los capítulos estén completados primero.",
+    "questions": "Preguntas",
+    "quiz": "Cuestionario",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "cancel": "Cancelar",
+    "submitConfirm": "¿Enviar Cuestionario?",
+    "submitMessage": "¿Estás seguro de que quieres enviar tu cuestionario?",
+    "unansweredWarning": "Has respondido {{answered}} de {{total}} preguntas. Las preguntas sin responder se marcarán como incorrectas.",
+    "submitting": "Enviando...",
+    "results": {
+      "title": "¡Cuestionario Completado!",
+      "score": "{{correct}}/{{total}}",
+      "percentage": "{{percent}}%",
+      "newBestScore": "🏆 ¡Nueva Mejor Puntuación!",
+      "excellent": "¡Excelente trabajo! 🎉",
+      "great": "¡Buen trabajo! 👏", 
+      "good": "¡Buen esfuerzo! 👍",
+      "needsWork": "No está mal, ¡pero puedes hacerlo mejor! 💪",
+      "keepStudying": "¡Sigue estudiando e inténtalo de nuevo! 📚",
+      "answerReview": "Revisión de Respuestas",
+      "explanation": "Explicación:",
+      "noAnswer": "No respondiste esta pregunta.",
+      "retakeQuiz": "Tomar Cuestionario de Nuevo"
+    }
+  },
+  "progress": {
+    "overall": "Progreso General",
+    "subjects": "Materias",
+    "topics": "Temas", 
+    "chapters": "Capítulos",
+    "completed": "Completado",
+    "inProgress": "En Progreso",
+    "notStarted": "No Iniciado"
+  },
+  "errors": {
+    "generic": "Algo salió mal. Por favor intenta de nuevo.",
+    "network": "Error de red. Por favor verifica tu conexión.",
+    "notFound": "Página no encontrada",
+    "unauthorized": "No estás autorizado para acceder a este recurso",
+    "validation": "Por favor verifica tu entrada e intenta de nuevo",
+    "serverError": "Error del servidor. Por favor intenta más tarde"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "minLength": "Debe tener al menos {{min}} caracteres",
+    "maxLength": "Debe tener máximo {{max}} caracteres",
+    "email": "Debe ser una dirección de correo válida",
+    "numeric": "Debe ser un número"
+  }
+}

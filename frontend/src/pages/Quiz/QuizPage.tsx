@@ -39,11 +39,13 @@ import remarkGfm from 'remark-gfm'
 
 import { subjectsAPI, Quiz as QuizType, QuizResult, QuizSubmission } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import { useTranslation } from 'react-i18next'
 
 const QuizPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId, topicTitle } = useParams<{ subjectId: string; topicTitle: string }>()
   const student = useAuthStore((state) => state.student)
+  const { t } = useTranslation()
   
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<(number | null)[]>([])
@@ -163,10 +165,10 @@ const QuizPage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Button startIcon={<ArrowBack />} onClick={handleBack} sx={{ mb: 3 }}>
-          Back to Chapters
+          {t('quiz.backToChapters')}
         </Button>
         <Alert severity="error">
-          Failed to load quiz. Please ensure all chapters are completed first.
+          {t('quiz.failedToLoad')}
         </Alert>
       </Container>
     )
@@ -176,13 +178,13 @@ const QuizPage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Button startIcon={<ArrowBack />} onClick={handleBack} sx={{ mb: 3 }}>
-          Back to Chapters
+          {t('quiz.backToChapters')}
         </Button>
         <Card sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Box sx={{ textAlign: 'center' }}>
             <CircularProgress size={48} sx={{ mb: 2 }} />
             <Typography variant="body1" color="textSecondary">
-              Loading quiz questions...
+              {t('quiz.loadingQuiz')}
             </Typography>
           </Box>
         </Card>
@@ -221,7 +223,7 @@ const QuizPage: React.FC = () => {
         transition={{ duration: 0.5 }}
       >
         <Button startIcon={<ArrowBack />} onClick={handleBack} sx={{ mb: 3 }}>
-          Back to Chapters
+          {t('quiz.backToChapters')}
         </Button>
 
         {/* Quiz Info Header */}
@@ -231,10 +233,10 @@ const QuizPage: React.FC = () => {
               <Quiz sx={{ fontSize: 32 }} />
               <Box>
                 <Typography variant="h5" fontWeight="bold">
-                  {decodeURIComponent(topicTitle || '')} Quiz
+                  {decodeURIComponent(topicTitle || '')} {t('quiz.quiz')}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {quizData.difficulty_level} • {quizData.total_questions} Questions
+                  {quizData.difficulty_level} • {quizData.total_questions} {t('quiz.questions')}
                 </Typography>
               </Box>
             </Stack>
@@ -243,20 +245,20 @@ const QuizPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Timer />
                 <Typography variant="body2">
-                  Time: {formatTime(timeElapsed)}
+                  {t('quiz.timeElapsed', { time: formatTime(timeElapsed) })}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CheckCircle />
                 <Typography variant="body2">
-                  Progress: {getAnsweredCount()}/{quizData.total_questions}
+                  {t('quiz.progress', { answered: getAnsweredCount(), total: quizData.total_questions })}
                 </Typography>
               </Box>
               {quizData.best_score !== null && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <EmojiEvents />
                   <Typography variant="body2">
-                    Best: {quizData.best_percentage?.toFixed(1)}%
+                    {t('quiz.bestScore', { score: quizData.best_percentage?.toFixed(1) })}
                   </Typography>
                 </Box>
               )}
@@ -295,7 +297,7 @@ const QuizPage: React.FC = () => {
               {/* Question Header */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  Question {currentQuestion + 1} of {quizData.questions.length}
+                  {t('quiz.question', { current: currentQuestion + 1, total: quizData.questions.length })}
                 </Typography>
                 <Divider />
               </Box>
@@ -374,7 +376,7 @@ const QuizPage: React.FC = () => {
                 size="large"
                 sx={{ px: 3, py: 1.5 }}
               >
-                Previous
+                {t('quiz.previous')}
               </Button>
             </Box>
 
@@ -421,7 +423,7 @@ const QuizPage: React.FC = () => {
                     transition: 'all 0.2s ease-in-out',
                   }}
                 >
-                  Submit Quiz
+                  {t('quiz.submitQuiz')}
                 </Button>
               ) : (
                 <Button
@@ -438,7 +440,7 @@ const QuizPage: React.FC = () => {
                     transition: 'all 0.2s ease-in-out',
                   }}
                 >
-                  Next
+                  {t('quiz.next')}
                 </Button>
               )}
             </Box>
@@ -448,24 +450,24 @@ const QuizPage: React.FC = () => {
 
       {/* Submit Confirmation Dialog */}
       <Dialog open={showSubmitDialog} onClose={() => setShowSubmitDialog(false)}>
-        <DialogTitle>Submit Quiz?</DialogTitle>
+        <DialogTitle>{t('quiz.submitConfirm')}</DialogTitle>
         <DialogContent>
           <Typography variant="body1" gutterBottom>
-            Are you sure you want to submit your quiz?
+            {t('quiz.submitMessage')}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            You have answered {getAnsweredCount()} out of {quizData.questions.length} questions.
-            {getAnsweredCount() < quizData.questions.length && ' Unanswered questions will be marked as incorrect.'}
+            {t('quiz.unansweredWarning', { answered: getAnsweredCount(), total: quizData.questions.length })}
+            {getAnsweredCount() < quizData.questions.length && ' ' + t('quiz.unansweredWarning').split('. ')[1]}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowSubmitDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowSubmitDialog(false)}>{t('quiz.cancel')}</Button>
           <Button 
             onClick={confirmSubmit} 
             variant="contained" 
             disabled={submitQuizMutation.isLoading}
           >
-            {submitQuizMutation.isLoading ? 'Submitting...' : 'Submit'}
+            {submitQuizMutation.isLoading ? t('quiz.submitting') : t('quiz.submit')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -481,6 +483,7 @@ interface QuizResultsProps {
 }
 
 const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) => {
+  const { t } = useTranslation()
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'success'
     if (percentage >= 60) return 'warning'
@@ -488,11 +491,11 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
   }
 
   const getScoreMessage = (percentage: number) => {
-    if (percentage >= 90) return 'Excellent work! 🎉'
-    if (percentage >= 80) return 'Great job! 👏'
-    if (percentage >= 70) return 'Good effort! 👍'
-    if (percentage >= 60) return 'Not bad, but you can do better! 💪'
-    return 'Keep studying and try again! 📚'
+    if (percentage >= 90) return t('quiz.results.excellent')
+    if (percentage >= 80) return t('quiz.results.great')
+    if (percentage >= 70) return t('quiz.results.good')
+    if (percentage >= 60) return t('quiz.results.needsWork')
+    return t('quiz.results.keepStudying')
   }
 
   return (
@@ -506,7 +509,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
         <CardContent sx={{ p: 4, textAlign: 'center' }}>
           <EmojiEvents sx={{ fontSize: 64, mb: 2 }} />
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Quiz Complete!
+            {t('quiz.results.title')}
           </Typography>
           <Typography variant="h2" fontWeight="bold" sx={{ mb: 1 }}>
             {result.score}/{result.questions.length}
@@ -519,7 +522,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
           </Typography>
           {result.is_best_score && (
             <Chip
-              label="🏆 New Best Score!"
+              label={t('quiz.results.newBestScore')}
               sx={{ mt: 2, backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
             />
           )}
@@ -530,7 +533,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h6" gutterBottom>
-            Answer Review
+            {t('quiz.results.answerReview')}
           </Typography>
           <Divider sx={{ mb: 3 }} />
 
@@ -542,7 +545,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
             return (
               <Box key={question.id} sx={{ mb: 4 }}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                  Question {index + 1}
+                  {t('quiz.question', { current: index + 1, total: result.questions.length })}
                 </Typography>
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {question.question}
@@ -577,13 +580,13 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
 
                 {!wasAnswered && (
                   <Alert severity="info" sx={{ mt: 2 }}>
-                    You didn't answer this question.
+                    {t('quiz.results.noAnswer')}
                   </Alert>
                 )}
 
                 <Box sx={{ mt: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
                   <Typography variant="body2" color="textSecondary">
-                    <strong>Explanation:</strong> {question.explanation}
+                    <strong>{t('quiz.results.explanation')}</strong> {question.explanation}
                   </Typography>
                 </Box>
               </Box>
@@ -595,10 +598,10 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
       {/* Action Buttons */}
       <Stack direction="row" spacing={2} justifyContent="center">
         <Button variant="outlined" onClick={onBack} size="large">
-          Back to Chapters
+          {t('quiz.backToChapters')}
         </Button>
         <Button variant="contained" onClick={onRetake} size="large">
-          Take Quiz Again
+          {t('quiz.results.retakeQuiz')}
         </Button>
       </Stack>
     </motion.div>

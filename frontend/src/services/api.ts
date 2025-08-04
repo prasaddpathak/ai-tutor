@@ -49,6 +49,7 @@ export interface AuthResponse {
   student?: {
     id: number
     name: string
+    language_preference: string
     created_at: string
     last_login: string
   }
@@ -143,10 +144,11 @@ export interface CameraInfo {
 
 // Auth API
 export const authAPI = {
-  register: (data: { name: string; image_data: string }) => {
+  register: (data: { name: string; image_data: string; language_preference?: string }) => {
     const formData = new FormData()
     formData.append('name', data.name)
     formData.append('image_data', data.image_data)
+    formData.append('language_preference', data.language_preference || 'en')
     
     return api.post<AuthResponse>('/auth/register', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
@@ -163,7 +165,10 @@ export const authAPI = {
   },
   
   validate: (studentName: string) => 
-    api.get(`/auth/validate/${studentName}`)
+    api.get(`/auth/validate/${studentName}`),
+  
+  updateStudentLanguage: (studentId: number, languageCode: string) =>
+    api.put(`/students/${studentId}/language`, { language_preference: languageCode })
 }
 
 // Camera API

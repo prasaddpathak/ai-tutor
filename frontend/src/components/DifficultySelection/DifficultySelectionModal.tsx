@@ -23,6 +23,7 @@ import {
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 import { subjectsAPI } from '../../services/api'
 
@@ -45,6 +46,7 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
 }) => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
   // Get available difficulty levels
   const { data: difficultyData } = useQuery(
@@ -61,7 +63,7 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
     (difficulty: string) => subjectsAPI.setSubjectDifficulty(studentId, subjectId, difficulty),
     {
       onSuccess: (response, difficulty) => {
-        toast.success(`Difficulty set to ${difficulty}!`)
+        toast.success(t('subjects.difficultySet', { difficulty }))
         onDifficultySet(difficulty)
         onClose()
         // Invalidate queries to refresh data
@@ -69,7 +71,7 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
         queryClient.invalidateQueries(['topics', subjectId.toString(), studentId])
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.detail || 'Failed to set difficulty')
+        toast.error(error.response?.data?.detail || t('subjects.difficultyError'))
       }
     }
   )
@@ -99,10 +101,10 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
   }
 
   const difficultyDescriptions = {
-    Foundation: 'Perfect for beginners with little to no prior knowledge',
-    Intermediate: 'Suitable for those with basic understanding and some experience',
-    Advanced: 'Designed for experienced learners seeking deeper knowledge',
-    Expert: 'Challenging content for professionals and advanced practitioners'
+    Foundation: t('subjects.difficulty.foundationDesc'),
+    Intermediate: t('subjects.difficulty.intermediateDesc'),
+    Advanced: t('subjects.difficulty.advancedDesc'),
+    Expert: t('subjects.difficulty.expertDesc')
   }
 
   return (
@@ -126,20 +128,20 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
       }}>
         <Box component="div">
           <Typography variant="h5" fontWeight="bold" component="div">
-            Choose Difficulty Level
+            {t('subjects.chooseDifficulty')}
           </Typography>
           <Typography variant="subtitle1" sx={{ opacity: 0.9, mt: 0.5 }} component="div">
-            for {subjectName}
+            {t('subjects.forSubject', { subject: subjectName })}
           </Typography>
         </Box>
       </DialogTitle>
 
       <DialogContent sx={{ p: 4 }}>
         <Typography variant="body1" color="textSecondary" textAlign="center" sx={{ mb: 4, lineHeight: 1.6 }}>
-          Select the difficulty level that matches your current knowledge in this subject.
+          {t('subjects.difficultyInstruction')}
           <br />
           <Box component="span" sx={{ fontSize: '0.9rem', opacity: 0.8 }}>
-            You can always change this later in your settings.
+            {t('subjects.difficultyChangeLater')}
           </Box>
         </Typography>
 
@@ -291,7 +293,7 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
             fontWeight: 600
           }}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         
         <Button
@@ -319,7 +321,7 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
             }
           }}
         >
-          {setDifficultyMutation.isLoading ? 'Setting...' : 'Continue Learning'}
+          {setDifficultyMutation.isLoading ? t('subjects.setting') : t('subjects.continueLearning')}
         </Button>
       </DialogActions>
     </Dialog>

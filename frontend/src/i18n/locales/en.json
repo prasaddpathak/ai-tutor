@@ -1,0 +1,368 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "retry": "Retry",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "select": "Select",
+    "none": "None",
+    "all": "All",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "navigation": {
+    "brand": "TerraTeach",
+    "subjects": "Subjects",
+    "topics": "Topics", 
+    "chapters": "Chapters",
+    "profile": "Profile",
+    "logout": "Logout",
+    "language": "Language"
+  },
+  "landing": {
+    "title": "Learn with TerraTeach",
+    "subtitle": "Personalized learning powered by AI, designed for complete offline operation",
+    "description": "Sustainable AI-powered education that grows with you. Skip the hassle of passwords and usernames - just look at your camera to access personalized learning powered by Google Gemma 3n running on NVIDIA Jetson Nano.",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "features": {
+      "hassleFreLogin": {
+        "title": "Hassle-Free Login",
+        "description": "No passwords to remember! Simply look at your camera and get instant access"
+      },
+      "aiPowered": {
+        "title": "AI-Powered Learning", 
+        "description": "Personalized education experience powered by Google Gemma AI models"
+      },
+      "offlineFirst": {
+        "title": "Offline-First Design",
+        "description": "Learn anywhere, anytime - even without internet connectivity"
+      },
+      "adaptiveContent": {
+        "title": "Adaptive Content",
+        "description": "Content difficulty adjusts automatically based on your learning progress"
+      },
+      "interactiveQuizzes": {
+        "title": "Interactive Quizzes",
+        "description": "Test your knowledge with AI-generated quizzes and instant feedback"
+      },
+      "progressTracking": {
+        "title": "Progress Tracking",
+        "description": "Visual progress tracking across subjects, topics, and chapters"
+      },
+      "smartTutoring": {
+        "title": "Smart Tutoring",
+        "description": "Get instant help and explanations from your AI teaching assistant"
+      }
+    },
+    "whyChoose": {
+      "title": "Why Choose TerraTeach?",
+      "subtitle": "Our eco-friendly platform combines cutting-edge AI technology with sustainable learning practices for the future of education."
+    },
+    "poweredBy": {
+      "title": "Powered By",
+      "description": "TerraTeach harnesses the cutting-edge Google Gemma 3n language model running efficiently on NVIDIA Jetson Nano hardware, delivering powerful AI education while maintaining sustainability and offline capability.",
+      "gemma": "Advanced AI Language Model",
+      "jetson": "Energy-Efficient Edge Computing"
+    },
+    "cta": {
+      "title": "Ready to Transform Your Learning?",
+      "description": "Join thousands of students already learning with TerraTeach's AI-powered, sustainable education platform.",
+      "button": "Get Started - No Passwords Needed!"
+    },
+    "footer": {
+      "description": "Sustainable AI-powered education for a greener future. Powered by Google Gemma 3n on NVIDIA Jetson Nano with eco-friendly principles.",
+      "copyright": "© 2024 TerraTeach. All rights reserved."
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "welcome": "Welcome Back",
+    "getStarted": "Let's Get Started",
+    "loginDescription": "Use face recognition to securely access your learning dashboard",
+    "registerDescription": "Create your personalized learning profile in seconds",
+    "nameLabel": "Full Name",
+    "namePlaceholder": "Enter your full name",
+    "nameRequired": "Name is required",
+    "nameTooLong": "Name too long",
+    "faceCapture": "Face Capture",
+    "capturePhoto": "Capture Photo",
+    "retakePhoto": "Retake Photo",
+    "photoRequired": "Photo is required for registration",
+    "processing": "Processing...",
+    "registering": "Creating Account...",
+    "loggingIn": "Logging In...",
+    "authError": "Authentication failed. Please try again.",
+    "registrationSuccess": "Account created successfully!",
+    "loginSuccess": "Welcome back!",
+    "photoRequired": "Please capture a photo first",
+    "nameRequired": "Name is required",
+    "nameTooLong": "Name too long"
+  },
+  "subjects": {
+    "title": "Choose Your Subject",
+    "subtitle": "Select a subject to explore AI-generated curriculum tailored to your level",
+    "welcomeBack": "Welcome back, {{name}}!",
+    "readyToContinue": "Ready to continue your learning journey?",
+    "subjectsStarted": "{{count}} subjects started",
+    "addNewSubject": "Add New Subject with AI",
+    "addSubjectModal": {
+      "title": "Create Your Subject",
+      "subtitle": "AI-powered personalized learning experience",
+      "steps": {
+        "describe": "Describe Your Interest",
+        "recommendations": "AI Recommendations",
+        "confirm": "Confirm Subject"
+      },
+      "step1": {
+        "title": "What would you like to learn?",
+        "description": "Describe your learning interests in natural language. Our AI will recommend personalized subjects for you.",
+        "placeholder": "For example: 'I want to learn about building websites and web applications' or 'I'm interested in understanding how the human brain works'...",
+        "inspiration": "💡 Need inspiration? Try these examples:",
+        "examples": [
+          "Data analysis and visualization",
+          "Mobile app development",
+          "Psychology and human behavior",
+          "Renewable energy systems",
+          "Digital marketing strategies",
+          "Artificial intelligence basics"
+        ],
+        "loading": {
+          "title": "AI is working its magic...",
+          "description": "Analyzing your request and generating personalized subject recommendations.",
+          "yourRequest": "📝 Your Request:"
+        }
+      },
+      "step2": {
+        "title": "AI-Recommended Subjects",
+        "description": "Based on your interest: \"{request}\"",
+        "perfectFor": "🎯 Perfect for you because:",
+        "chooseSubject": "Choose This Subject"
+      },
+      "step3": {
+        "title": "Ready to Create Subject",
+        "description": "Review your selection and create your personalized learning journey",
+        "originalRequest": "📝 Your Original Request:",
+        "whyPerfect": "🎯 Why this subject is perfect for you:"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "back": "Back",
+        "getRecommendations": "Get AI Recommendations",
+        "generating": "Generating...",
+        "createSubject": "Create Subject",
+        "creating": "Creating..."
+      },
+      "errors": {
+        "minLength": "Please provide a more detailed description (at least 5 characters)",
+        "noRecommendations": "Failed to get AI recommendations",
+        "createFailed": "Failed to create subject"
+      },
+      "success": {
+        "created": "Subject \"{name}\" created successfully!"
+      }
+    },
+    "noSubjects": "No subjects available",
+    "noSubjectsDescription": "Subjects will be loaded from the database. Please check your backend connection.",
+    "explore": "Explore Topics",
+    "difficulty": {
+      "foundation": "Foundation",
+      "intermediate": "Intermediate", 
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "progress": "Progress",
+    "selectDifficulty": "Choose Difficulty",
+    "startLearning": "Start Learning",
+    "chooseDifficulty": "Choose Difficulty",
+    "forSubject": "for {{subject}}",
+    "difficultyInstruction": "Select the learning difficulty that best matches your current knowledge level. This will help us customize the content to provide you with the most effective learning experience.",
+    "difficultyChangeLater": "Don't worry - you can always change this later in your settings!",
+    "difficultySet": "Difficulty set to {{difficulty}}",
+    "difficultyError": "Failed to set difficulty. Please try again.",
+    "continueLearning": "Continue Learning",
+    "setting": "Setting...",
+    "difficulty": {
+      "foundationDesc": "Perfect for beginners with little to no prior knowledge. We'll start with the basics and build up gradually.",
+      "intermediateDesc": "Great for learners with some basic understanding who want to expand their knowledge and skills.",
+      "advancedDesc": "Ideal for experienced learners ready to tackle complex concepts and advanced applications.",
+      "expertDesc": "For masters seeking cutting-edge insights and the most challenging content available."
+    }
+  },
+  "topics": {
+    "title": "Topics",
+    "subtitle": "Explore different aspects of {{subject}}",
+    "noTopics": "No topics available",
+    "backToSubjects": "Back to Subjects",
+    "viewChapters": "View Chapters",
+    "topicsGenerated": "{{count}} topics generated",
+    "difficulty": "Difficulty: {{level}}",
+    "loadingTopics": "Loading topics...",
+    "chooseTopicToExplore": "Choose a topic to explore detailed chapters",
+    "regenerateTooltip": "Regenerate topics with fresh AI content",
+    "generatingCurriculum": "Generating Curriculum...",
+    "aiCreatingTopics": "Our AI is creating personalized topics for your level. This may take a moment.",
+    "difficultyRequired": "Difficulty Level Required",
+    "failedToLoad": "Failed to load topics. Please try again later.",
+    "noTopicsDescription": "We couldn't generate topics for this subject. Please try again or contact support.",
+    "chooseAnotherSubject": "Choose Another Subject",
+    "hasChaptersTooltip": "This topic has chapters generated",
+    "regenerateDialog": {
+      "title": "Regenerate Topics?",
+      "description": "This will generate fresh AI content for all topics in this subject. The current topics will be replaced. This process may take a few minutes. Are you sure you want to continue?",
+      "cancel": "Cancel",
+      "confirm": "Regenerate",
+      "regenerating": "Regenerating..."
+    }
+  },
+  "chapters": {
+    "title": "Chapters",
+    "subtitle": "Deep dive into {{topic}}",
+    "noChapters": "No chapters available", 
+    "backToTopics": "Back to Topics",
+    "readChapter": "Read Chapter",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "notStarted": "Not Started",
+    "chaptersGenerated": "{{count}} chapters available",
+    "takeQuiz": "Take Quiz",
+    "quizUnlocked": "Quiz Unlocked!",
+    "completeChapters": "Complete all chapters to unlock the quiz",
+    "loadingChapters": "Loading chapters...",
+    "selectChapterToRead": "Select a chapter to read the content",
+    "difficultyRequired": "Difficulty Level Required",
+    "backToSubjects": "Back to Subjects",
+    "regenerateTooltip": "Regenerate chapters with fresh AI content",
+    "generatingChapters": "Generating chapters with AI...",
+    "generatingMayTake": "This may take up to 5-10 minutes",
+    "failedToLoad": "Failed to load chapters. Please try again later.",
+    "selectAChapter": "Select a Chapter",
+    "chooseChapterToView": "Choose a chapter from the list to view its detailed content",
+    "readFullChapter": "Read Full Chapter",
+    "topicQuiz": "Topic Quiz",
+    "multipleChoiceQuestions": "10 Multiple Choice Questions",
+    "completeAllChapters": "Complete all chapters to unlock",
+    "progress": "Progress: {{completed}}/{{total}} chapters completed",
+    "completeMoreChapters": "Complete {{count}} more chapters",
+    "retakeQuiz": "Retake Quiz",
+    "results": "Results",
+    "quizResults": "Quiz Results",
+    "attempt": "attempt",
+    "attempts": "attempts",
+    "bestScore": "Best Score",
+    "bestPerformance": "Best Performance",
+    "attemptHistory": "Attempt History",
+    "best": "Best",
+    "regenerateDialog": {
+      "title": "Regenerate Chapters?",
+      "description": "This will generate fresh AI content for all chapters in this topic. The current chapters will be replaced. This process may take several minutes. Are you sure you want to continue?",
+      "cancel": "Cancel",
+      "confirm": "Regenerate",
+      "regenerating": "Regenerating..."
+    }
+  },
+  "chapterReader": {
+    "title": "Reading",
+    "backToChapters": "Back to Chapters",
+    "page": "Page {{current}} of {{total}}",
+    "progress": "Reading Progress: {{percent}}%",
+    "completeChapter": "Complete Chapter",
+    "completing": "Completing...",
+    "nextPage": "Next Page",
+    "previousPage": "Previous Page",
+    "loadingContent": "Loading chapter content...",
+    "failedToLoad": "Failed to load chapter content",
+    "failedToLoadDescription": "Please try again later or go back to chapters list",
+    "next": "Next",
+    "previous": "Previous",
+    "subject": "Subject"
+  },
+  "chat": {
+    "title": "AI Tutor",
+    "placeholder": "Ask about this chapter...",
+    "emptyState": "Ask me anything about this chapter!",
+    "contextInfo": "I have context about the content you're reading.",
+    "page": "Page {{number}}"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "subtitle": "Test your knowledge of {{topic}}",
+    "backToChapters": "Back to Chapters",
+    "question": "Question {{current}} of {{total}}",
+    "progress": "Progress: {{answered}}/{{total}}",
+    "timeElapsed": "Time: {{time}}",
+    "bestScore": "Best: {{score}}%",
+    "submitQuiz": "Submit Quiz",
+    "nextQuestion": "Next",
+    "previousQuestion": "Previous", 
+    "loadingQuiz": "Loading quiz questions...",
+    "failedToLoad": "Failed to load quiz. Please ensure all chapters are completed first.",
+    "questions": "Questions",
+    "quiz": "Quiz",
+    "previous": "Previous",
+    "next": "Next",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "submitConfirm": "Submit Quiz?",
+    "submitMessage": "Are you sure you want to submit your quiz?",
+    "unansweredWarning": "You have answered {{answered}} out of {{total}} questions. Unanswered questions will be marked as incorrect.",
+    "submitting": "Submitting...",
+    "results": {
+      "title": "Quiz Complete!",
+      "score": "{{correct}}/{{total}}",
+      "percentage": "{{percent}}%",
+      "newBestScore": "🏆 New Best Score!",
+      "excellent": "Excellent work! 🎉",
+      "great": "Great job! 👏", 
+      "good": "Good effort! 👍",
+      "needsWork": "Not bad, but you can do better! 💪",
+      "keepStudying": "Keep studying and try again! 📚",
+      "answerReview": "Answer Review",
+      "explanation": "Explanation:",
+      "noAnswer": "You didn't answer this question.",
+      "retakeQuiz": "Take Quiz Again"
+    }
+  },
+  "progress": {
+    "overall": "Overall Progress",
+    "subjects": "Subjects",
+    "topics": "Topics", 
+    "chapters": "Chapters",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "notStarted": "Not Started"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "notFound": "Page not found",
+    "unauthorized": "You are not authorized to access this resource",
+    "validation": "Please check your input and try again",
+    "serverError": "Server error. Please try again later"
+  },
+  "validation": {
+    "required": "This field is required",
+    "minLength": "Must be at least {{min}} characters",
+    "maxLength": "Must be no more than {{max}} characters",
+    "email": "Must be a valid email address",
+    "numeric": "Must be a number"
+  }
+}

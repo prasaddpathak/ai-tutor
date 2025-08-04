@@ -50,10 +50,15 @@ def decode_base64_image(base64_string: str) -> np.ndarray:
 @router.post("/register", response_model=AuthResponse)
 async def register_student(
     name: str = Form(...),
-    image_data: str = Form(..., description="Base64 encoded image data")
+    image_data: str = Form(..., description="Base64 encoded image data"),
+    language_preference: str = Form(default="en", description="Language preference (en/es)")
 ):
     """Register a new student with face recognition."""
     try:
+        # Validate language preference
+        if language_preference not in ['en', 'es']:
+            language_preference = 'en'  # Default to English if invalid
+        
         # Check if student already exists
         existing_student = db.get_student_by_name(name)
         if existing_student:
@@ -65,8 +70,8 @@ async def register_student(
         # Register face
         register_face(name, frame)
         
-        # Create student in database (no difficulty level needed)
-        student_id = db.create_student(name)
+        # Create student in database with language preference
+        student_id = db.create_student(name, language_preference)
         student = db.get_student_by_name(name)
         
         return AuthResponse(

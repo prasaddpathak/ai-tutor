@@ -17,16 +17,11 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 import CameraCapture from '../../components/Camera/CameraCapture'
 import { authAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
-
-const registerSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-})
-
-type RegisterForm = z.infer<typeof registerSchema>
 
 const AuthPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0)
@@ -35,6 +30,13 @@ const AuthPage: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   
   const login = useAuthStore((state) => state.login)
+  const { t } = useTranslation()
+
+  const registerSchema = z.object({
+    name: z.string().min(1, t('auth.nameRequired')).max(100, t('auth.nameTooLong')),
+  })
+
+  type RegisterForm = z.infer<typeof registerSchema>
 
   const {
     control,
@@ -62,7 +64,7 @@ const AuthPage: React.FC = () => {
 
   const handleLogin = async () => {
     if (!capturedImage) {
-      setError('Please capture a photo first')
+      setError(t('auth.photoRequired'))
       return
     }
 
@@ -76,10 +78,10 @@ const AuthPage: React.FC = () => {
         login(response.data.student)
         toast.success(response.data.message)
       } else {
-        setError(response.data.message || 'Login failed')
+        setError(response.data.message || t('auth.authError'))
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Login failed'
+      const errorMessage = err.response?.data?.detail || err.message || t('auth.authError')
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -88,7 +90,7 @@ const AuthPage: React.FC = () => {
 
   const handleRegister = async (data: RegisterForm) => {
     if (!capturedImage) {
-      setError('Please capture a photo first')
+      setError(t('auth.photoRequired'))
       return
     }
 
@@ -105,10 +107,10 @@ const AuthPage: React.FC = () => {
         login(response.data.student)
         toast.success(response.data.message)
       } else {
-        setError(response.data.message || 'Registration failed')
+        setError(response.data.message || t('auth.authError'))
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Registration failed'
+      const errorMessage = err.response?.data?.detail || err.message || t('auth.authError')
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -162,7 +164,7 @@ const AuthPage: React.FC = () => {
                 TerraTeach
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                Sustainable AI-Powered Learning
+                {t('landing.subtitle')}
               </Typography>
             </Box>
 
@@ -182,12 +184,12 @@ const AuthPage: React.FC = () => {
               >
                 <Tab
                   icon={<LoginOutlined />}
-                  label="Login"
+                  label={t('auth.login')}
                   iconPosition="start"
                 />
                 <Tab
                   icon={<PersonAddOutlined />}
-                  label="Register"
+                  label={t('auth.register')}
                   iconPosition="start"
                 />
               </Tabs>
@@ -205,10 +207,10 @@ const AuthPage: React.FC = () => {
                     transition={{ duration: 0.3 }}
                   >
                     <Typography variant="h5" textAlign="center" gutterBottom>
-                      Welcome Back!
+                      {t('auth.welcome')}
                     </Typography>
                     <Typography variant="body1" textAlign="center" color="textSecondary" sx={{ mb: 4 }}>
-                      Look into the camera to login with face recognition
+                      {t('auth.loginDescription')}
                     </Typography>
                     
                     <CameraCapture
@@ -228,7 +230,7 @@ const AuthPage: React.FC = () => {
                             disabled={isLoading}
                             sx={{ minWidth: 200 }}
                           >
-                            {isLoading ? 'Authenticating...' : 'Login'}
+                            {isLoading ? t('auth.loggingIn') : t('auth.login')}
                           </Button>
                         </Box>
                       </Fade>
@@ -243,10 +245,10 @@ const AuthPage: React.FC = () => {
                     transition={{ duration: 0.3 }}
                   >
                     <Typography variant="h5" textAlign="center" gutterBottom>
-                      Create Account
+                      {t('auth.getStarted')}
                     </Typography>
                     <Typography variant="body1" textAlign="center" color="textSecondary" sx={{ mb: 4 }}>
-                      Enter your details and capture your photo to get started
+                      {t('auth.registerDescription')}
                     </Typography>
 
                     <form onSubmit={handleSubmit(handleRegister)}>
@@ -257,7 +259,8 @@ const AuthPage: React.FC = () => {
                           render={({ field }) => (
                             <TextField
                               {...field}
-                              label="Full Name"
+                              label={t('auth.nameLabel')}
+                              placeholder={t('auth.namePlaceholder')}
                               fullWidth
                               error={!!errors.name}
                               helperText={errors.name?.message}
@@ -285,7 +288,7 @@ const AuthPage: React.FC = () => {
                               disabled={isLoading}
                               sx={{ minWidth: 200 }}
                             >
-                              {isLoading ? 'Creating Account...' : 'Register'}
+                              {isLoading ? t('auth.registering') : t('auth.register')}
                             </Button>
                           </Box>
                         </Fade>
