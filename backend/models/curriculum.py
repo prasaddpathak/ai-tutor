@@ -55,5 +55,46 @@ class SubjectDifficultyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+# Quiz models
+class QuizQuestion(BaseModel):
+    id: str
+    question: str
+    options: List[str]  # 4 multiple choice options
+    correct_answer: int  # Index of correct answer (0-3)
+    explanation: str
+
+class Quiz(BaseModel):
+    id: str
+    subject_id: int
+    topic_title: str
+    difficulty_level: str
+    questions: List[QuizQuestion]
+    created_at: datetime
+
+class QuizSubmission(BaseModel):
+    quiz_id: str
+    student_id: int
+    answers: List[int]  # List of selected answer indices
+
+class QuizResult(BaseModel):
+    id: str
+    quiz_id: str
+    student_id: int
+    answers: List[int]
+    score: int  # Number of correct answers (0-20)
+    percentage: float  # Score as percentage
+    submitted_at: datetime
+
+class QuizResultWithDetails(BaseModel):
+    id: str
+    quiz_id: str
+    student_id: int
+    answers: List[int]
+    score: int
+    percentage: float
+    submitted_at: datetime
+    questions: List[QuizQuestion]  # Include questions for review
+    is_best_score: Optional[bool] = False
+
 # Available difficulty levels
 DIFFICULTY_LEVELS = ["Foundation", "Intermediate", "Advanced", "Expert"] 

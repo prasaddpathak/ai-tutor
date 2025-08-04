@@ -29,6 +29,8 @@ class DatabaseManager:
         """Initialize database with required tables. Drops and recreates all tables for clean state."""
         with self.get_connection() as conn:
             # Drop all existing tables for clean state (no migrations needed in early development)
+            conn.execute('DROP TABLE IF EXISTS quiz_results')
+            conn.execute('DROP TABLE IF EXISTS quizzes')
             conn.execute('DROP TABLE IF EXISTS student_progress')
             conn.execute('DROP TABLE IF EXISTS student_subject_preferences')
             conn.execute('DROP TABLE IF EXISTS student_subject_difficulty') 
@@ -97,6 +99,37 @@ class DatabaseManager:
                     UNIQUE(student_id, subject_id),
                     FOREIGN KEY (student_id) REFERENCES students (id),
                     FOREIGN KEY (subject_id) REFERENCES subjects (id)
+                )
+            ''')
+            
+            # Quizzes table
+            conn.execute('''
+                CREATE TABLE quizzes (
+                    id TEXT PRIMARY KEY,
+                    student_id INTEGER NOT NULL,
+                    subject_id INTEGER NOT NULL,
+                    topic_title TEXT NOT NULL,
+                    difficulty_level TEXT NOT NULL CHECK (difficulty_level IN ('Foundation', 'Intermediate', 'Advanced', 'Expert')),
+                    questions_json TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(student_id, subject_id, topic_title, difficulty_level),
+                    FOREIGN KEY (student_id) REFERENCES students (id),
+                    FOREIGN KEY (subject_id) REFERENCES subjects (id)
+                )
+            ''')
+            
+            # Quiz results table
+            conn.execute('''
+                CREATE TABLE quiz_results (
+                    id TEXT PRIMARY KEY,
+                    quiz_id TEXT NOT NULL,
+                    student_id INTEGER NOT NULL,
+                    answers_json TEXT NOT NULL,
+                    score INTEGER NOT NULL,
+                    percentage REAL NOT NULL,
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (quiz_id) REFERENCES quizzes (id),
+                    FOREIGN KEY (student_id) REFERENCES students (id)
                 )
             ''')
             
@@ -254,6 +287,60 @@ class DatabaseManager:
                 FROM student_subject_preferences
                 WHERE student_id = ? AND subject_id = ?
             ''', (student_id, subject_id)).fetchone()
+            return dict(row) if row else None
+    
+    # Quiz-related methods
+    
+    def create_quiz(self, quiz_id: str, student_id: int, subject_id: int, 
+                   topic_title: str, difficulty_level: str, questions_json: str) -> str:
+        """Create a new quiz for a student."""
+        with self.get_connection() as conn:
+            conn.execute('''
+                INSERT OR REPLACE INTO quizzes 
+                (id, student_id, subject_id, topic_title, difficulty_level, questions_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (quiz_id, student_id, subject_id, topic_title, difficulty_level, questions_json))
+            return quiz_id
+    
+    def get_quiz(self, student_id: int, subject_id: int, topic_title: str, difficulty_level: str) -> Optional[Dict]:
+        """Get quiz for a specific student-subject-topic-difficulty combination."""
+        with self.get_connection() as conn:
+            row = conn.execute('''
+                SELECT * FROM quizzes
+                WHERE student_id = ? AND subject_id = ? AND topic_title = ? AND difficulty_level = ?
+            ''', (student_id, subject_id, topic_title, difficulty_level)).fetchone()
+            return dict(row) if row else None
+    
+    def save_quiz_result(self, result_id: str, quiz_id: str, student_id: int, 
+                        answers_json: str, score: int, percentage: float) -> str:
+        """Save a quiz result."""
+        with self.get_connection() as conn:
+            conn.execute('''
+                INSERT INTO quiz_results 
+                (id, quiz_id, student_id, answers_json, score, percentage)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (result_id, quiz_id, student_id, answers_json, score, percentage))
+            return result_id
+    
+    def get_quiz_results(self, student_id: int, quiz_id: str) -> List[Dict]:
+        """Get all quiz results for a student on a specific quiz."""
+        with self.get_connection() as conn:
+            rows = conn.execute('''
+                SELECT * FROM quiz_results
+                WHERE student_id = ? AND quiz_id = ?
+                ORDER BY submitted_at DESC
+            ''', (student_id, quiz_id)).fetchall()
+            return [dict(row) for row in rows]
+    
+    def get_best_quiz_result(self, student_id: int, quiz_id: str) -> Optional[Dict]:
+        """Get the best (highest scoring) quiz result for a student on a specific quiz."""
+        with self.get_connection() as conn:
+            row = conn.execute('''
+                SELECT * FROM quiz_results
+                WHERE student_id = ? AND quiz_id = ?
+                ORDER BY score DESC, submitted_at ASC
+                LIMIT 1
+            ''', (student_id, quiz_id)).fetchone()
             return dict(row) if row else None
 
 # Global database instance

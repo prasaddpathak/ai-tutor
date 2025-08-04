@@ -11,6 +11,7 @@ import SubjectsPage from './pages/Subjects/SubjectsPage'
 import TopicsPage from './pages/Topics/TopicsPage'
 import ChaptersPage from './pages/Chapters/ChaptersPage'
 import ChapterReaderPage from './pages/Chapters/ChapterReaderPage'
+import QuizPage from './pages/Quiz/QuizPage'
 import NotFoundPage from './pages/NotFound/NotFoundPage'
 import LoadingScreen from './components/Loading/LoadingScreen'
 
@@ -112,6 +113,21 @@ function App() {
                 transition={{ duration: 0.3 }}
               >
                 <ChapterReaderPage />
+              </motion.div>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/subjects/:subjectId/topics/:topicTitle/quiz" 
+          element={
+            <ProtectedRoute>
+              <Navbar />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <QuizPage />
               </motion.div>
             </ProtectedRoute>
           } 

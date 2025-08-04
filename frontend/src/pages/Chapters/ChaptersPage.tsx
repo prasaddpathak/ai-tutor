@@ -19,20 +19,24 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Stack,
 } from '@mui/material'
 import { 
   ArrowBack, 
   MenuBook,
   AutoAwesome, 
   CheckCircle, 
-  Refresh
+  Refresh,
+  Quiz,
+  Lock,
+  EmojiEvents
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import ReactMarkdown from 'react-markdown'
 
-import { subjectsAPI } from '../../services/api'
+import { subjectsAPI, QuizResultsHistory } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 
 const ChaptersPage: React.FC = () => {
@@ -56,6 +60,40 @@ const ChaptersPage: React.FC = () => {
       retry: 2,
     }
   )
+
+  // Fetch quiz results if all chapters are completed
+  const allChaptersCompleted = chaptersData?.chapters ? 
+    chaptersData.chapters.every((chapter: any) => chapter.has_content_generated) : false
+
+  // State to control when to fetch quiz results (only after user has taken quiz)
+  const [shouldFetchResults, setShouldFetchResults] = React.useState(false)
+
+  const { data: quizResults } = useQuery<QuizResultsHistory>(
+    ['quiz-results', subjectId, topicTitle, student?.id],
+    () => subjectsAPI.getQuizResults(
+      parseInt(subjectId!),
+      decodeURIComponent(topicTitle!),
+      student!.id
+    ).then(res => res.data),
+    {
+      enabled: !!subjectId && !!topicTitle && !!student?.id && allChaptersCompleted && shouldFetchResults,
+      retry: 1,
+      staleTime: 30000, // Consider data fresh for 30 seconds
+      refetchOnWindowFocus: false,
+      onError: (error) => {
+        console.log('Quiz results not available yet:', error)
+      }
+    }
+  )
+
+  // Check if quiz was taken by attempting to fetch it (only when returning from quiz)
+  React.useEffect(() => {
+    if (allChaptersCompleted && window.location.hash === '#quiz-completed') {
+      setShouldFetchResults(true)
+      // Clean up the hash
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }, [allChaptersCompleted])
 
   const regenerateChaptersMutation = useMutation(
     () => subjectsAPI.getChapters(
@@ -291,6 +329,18 @@ const ChaptersPage: React.FC = () => {
                 </Box>
               )}
 
+              {/* Quiz Card */}
+              {!isLoading && chaptersData?.chapters && chaptersData.chapters.length > 0 && (
+                <QuizCard 
+                  chapters={chaptersData.chapters}
+                  subjectId={parseInt(subjectId!)}
+                  topicTitle={decodeURIComponent(topicTitle!)}
+                  studentId={student?.id!}
+                  quizResults={quizResults}
+                  onCheckResults={() => setShouldFetchResults(true)}
+                />
+              )}
+
               {/* Empty State */}
               {!isLoading && (!chaptersData?.chapters || chaptersData.chapters.length === 0) && !isCurrentlyGenerating() && (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -441,6 +491,266 @@ const ChaptersPage: React.FC = () => {
         </DialogActions>
       </Dialog>
     </Container>
+  )
+}
+
+// Quiz Card Component
+interface QuizCardProps {
+  chapters: any[]
+  subjectId: number
+  topicTitle: string
+  studentId: number
+  quizResults?: QuizResultsHistory
+  onCheckResults: () => void
+}
+
+const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, studentId, quizResults, onCheckResults }) => {
+  const navigate = useNavigate()
+  
+  // Check if all chapters are completed (have content generated)
+  const allChaptersCompleted = chapters.every(chapter => chapter.has_content_generated)
+  const completedCount = chapters.filter(chapter => chapter.has_content_generated).length
+  const totalCount = chapters.length
+
+  const handleTakeQuiz = () => {
+    navigate(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/quiz`)
+  }
+
+  const handleCheckResults = () => {
+    setShouldFetchResults(true)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getScoreColor = (percentage: number) => {
+    if (percentage >= 80) return '#4CAF50'
+    if (percentage >= 60) return '#FF9800'
+    return '#F44336'
+  }
+
+  // If quiz results exist, show results card
+  if (quizResults && quizResults.total_attempts > 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Card sx={{ mt: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            {/* Quiz Results Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <EmojiEvents sx={{ fontSize: 32, color: getScoreColor(quizResults.best_percentage || 0) }} />
+              <Box>
+                <Typography variant="h6" fontWeight="bold">
+                  Quiz Results
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {quizResults.total_attempts} attempt{quizResults.total_attempts !== 1 ? 's' : ''} • Best Score: {quizResults.best_percentage?.toFixed(1)}%
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Best Score Display */}
+            <Box sx={{ 
+              p: 2, 
+              mb: 3, 
+              borderRadius: 2, 
+              background: `linear-gradient(135deg, ${getScoreColor(quizResults.best_percentage || 0)}15, ${getScoreColor(quizResults.best_percentage || 0)}25)`,
+              border: `1px solid ${getScoreColor(quizResults.best_percentage || 0)}`,
+            }}>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                Best Performance
+              </Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: getScoreColor(quizResults.best_percentage || 0) }}>
+                {quizResults.best_score}/10
+              </Typography>
+              <Typography variant="h6" sx={{ color: getScoreColor(quizResults.best_percentage || 0) }}>
+                {quizResults.best_percentage?.toFixed(1)}%
+              </Typography>
+            </Box>
+
+            {/* Quiz History */}
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              Attempt History
+            </Typography>
+            <Stack spacing={1} sx={{ mb: 3, maxHeight: 200, overflow: 'auto' }}>
+              {quizResults.results_history.map((result, index) => (
+                <Box
+                  key={result.id}
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    backgroundColor: result.is_best ? 'success.light' : 'grey.50',
+                    border: result.is_best ? '1px solid' : '1px solid transparent',
+                    borderColor: result.is_best ? 'success.main' : 'transparent',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Box>
+                    <Typography variant="body2" fontWeight="bold">
+                      Attempt #{quizResults.results_history.length - index}
+                      {result.is_best && (
+                        <Chip
+                          label="Best"
+                          size="small"
+                          color="success"
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                        />
+                      )}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {formatDate(result.submitted_at)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="body1" fontWeight="bold">
+                      {result.score}/10
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: getScoreColor(result.percentage) }}>
+                      {result.percentage.toFixed(1)}%
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+
+            {/* Action Buttons */}
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                onClick={handleTakeQuiz}
+                startIcon={<Quiz />}
+                sx={{ flex: 1 }}
+              >
+                Retake Quiz
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )
+  }
+
+  // Otherwise, show the original unlock card
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+    >
+      <Card 
+        sx={{ 
+          mt: 3,
+          background: allChaptersCompleted 
+            ? 'linear-gradient(135deg, #B8860B 0%, #DAA520 100%)' 
+            : 'linear-gradient(135deg, #757575 0%, #BDBDBD 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: allChaptersCompleted ? 'none' : 'rgba(0,0,0,0.3)',
+            zIndex: 1,
+          }
+        }}
+      >
+        <CardContent sx={{ position: 'relative', zIndex: 2, p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            {allChaptersCompleted ? (
+              <Quiz sx={{ fontSize: 32 }} />
+            ) : (
+              <Lock sx={{ fontSize: 32 }} />
+            )}
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                Topic Quiz
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                {allChaptersCompleted ? '10 Multiple Choice Questions' : 'Complete all chapters to unlock'}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1, opacity: 0.9 }}>
+              Progress: {completedCount}/{totalCount} chapters completed
+            </Typography>
+            <Box
+              sx={{
+                width: '100%',
+                height: 8,
+                backgroundColor: 'rgba(255,255,255,0.3)',
+                borderRadius: 4,
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  width: `${(completedCount / totalCount) * 100}%`,
+                  height: '100%',
+                  backgroundColor: allChaptersCompleted ? '#388E3C' : '#FFF',
+                  transition: 'width 0.3s ease-in-out',
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              onClick={handleTakeQuiz}
+              disabled={!allChaptersCompleted}
+              startIcon={allChaptersCompleted ? <EmojiEvents /> : <Lock />}
+              sx={{
+                flex: 1,
+                backgroundColor: allChaptersCompleted ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)',
+                color: 'white',
+                fontWeight: 'bold',
+                '&:hover': {
+                  backgroundColor: allChaptersCompleted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+                },
+                '&:disabled': {
+                  color: 'rgba(255,255,255,0.7)',
+                }
+              }}
+            >
+              {allChaptersCompleted ? 'Take Quiz' : `Complete ${totalCount - completedCount} more chapters`}
+            </Button>
+            {allChaptersCompleted && (
+              <Button
+                variant="outlined"
+                onClick={onCheckResults}
+                sx={{
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.5)',
+                  '&:hover': {
+                    borderColor: 'white',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                  }
+                }}
+              >
+                Results
+              </Button>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 

@@ -10,13 +10,15 @@ import sys
 from pathlib import Path
 import asyncio
 from datetime import datetime
+import json
 
 # Import from backend core modules
 from backend.core.database import db
 from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters, generate_subject_recommendations
 from backend.models.curriculum import (
     Subject, Topic, Chapter, GenerateTopicsRequest, GenerateChaptersRequest,
-    SetSubjectDifficultyRequest, SubjectDifficultyResponse, DIFFICULTY_LEVELS
+    SetSubjectDifficultyRequest, SubjectDifficultyResponse, DIFFICULTY_LEVELS,
+    Quiz, QuizQuestion, QuizSubmission, QuizResult, QuizResultWithDetails
 )
 
 router = APIRouter()
@@ -873,6 +875,312 @@ async def get_chat_history(
             "difficulty_level": difficulty_level,
             "chat_history": chat_history,
             "message_count": len(chat_history)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Quiz generation function
+def generate_quiz_questions(subject_name: str, topic_title: str, difficulty_level: str, chapter_contents: List[str]) -> List[QuizQuestion]:
+    """Generate 20 quiz questions based on chapter contents using LLM."""
+    from backend.core.curriculum.llm_client import query_llm
+    import uuid
+    import json
+    
+    # Combine all chapter content for context
+    content_context = "\n\n".join(chapter_contents)
+    
+    prompt = f"""Generate exactly 10 multiple choice questions for a quiz on the topic "{topic_title}" in the subject "{subject_name}" at {difficulty_level} difficulty level.
+
+CONTENT TO BASE QUESTIONS ON:
+{content_context[:8000]}
+
+REQUIREMENTS:
+1. Generate exactly 10 questions
+2. Each question should have exactly 4 options (A, B, C, D)
+3. Questions should be highly relevant to the provided content
+4. Difficulty should match {difficulty_level} level
+5. Include a brief explanation for each correct answer
+6. Questions should test understanding, not just memorization
+7. Cover different aspects of the topic comprehensively
+
+FORMAT YOUR RESPONSE AS VALID JSON:
+{{
+  "questions": [
+    {{
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_answer": 0,
+      "explanation": "Brief explanation of why this is correct."
+    }}
+  ]
+}}
+
+IMPORTANT: 
+- Respond ONLY with valid JSON, no markdown formatting, no code blocks, no additional text
+- Start your response directly with {{ and end with }}
+- Do not include ```json or ``` markers
+- Ensure the JSON is properly formatted and parseable
+
+Generate the quiz now:"""
+
+    try:
+        response = query_llm(prompt)
+        
+        # Clean up the response - remove markdown code blocks if present
+        response = response.strip()
+        if response.startswith('```json'):
+            response = response[7:]  # Remove ```json
+        if response.startswith('```'):
+            response = response[3:]   # Remove ```
+        if response.endswith('```'):
+            response = response[:-3]  # Remove trailing ```
+        
+        response = response.strip()
+        
+        # Try to parse JSON response
+        quiz_data = json.loads(response)
+        
+        questions = []
+        for i, q in enumerate(quiz_data.get("questions", [])[:10]):  # Ensure max 10 questions
+            questions.append(QuizQuestion(
+                id=str(uuid.uuid4()),
+                question=q["question"],
+                options=q["options"][:4],  # Ensure max 4 options
+                correct_answer=q["correct_answer"],
+                explanation=q["explanation"]
+            ))
+        
+        # Ensure we have exactly 10 questions
+        if len(questions) != 10:
+            raise ValueError(f"Expected 10 questions, got {len(questions)}")
+            
+        return questions
+        
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        # Log the raw response for debugging
+        print(f"Failed to parse LLM response. Raw response: {response[:500]}...")
+        raise HTTPException(status_code=500, detail=f"Failed to generate quiz questions: {str(e)}")
+
+@router.get("/{subject_id}/topics/{topic_title}/quiz")
+async def get_or_generate_quiz(
+    subject_id: int,
+    topic_title: str,
+    student_id: int = Query(..., description="Student ID for user-specific quiz")
+):
+    """Get or generate a quiz for a topic."""
+    try:
+        from urllib.parse import unquote
+        import json
+        topic_title = unquote(topic_title)
+        
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Get difficulty level
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="Difficulty level required")
+        
+        # Check if quiz already exists
+        existing_quiz = db.get_quiz(student_id, subject_id, topic_title, difficulty_level)
+        
+        if existing_quiz:
+            # Return existing quiz
+            questions_data = json.loads(existing_quiz['questions_json'])
+            questions = [QuizQuestion(**q) for q in questions_data]
+            
+            # Get best score if any attempts exist
+            best_result = db.get_best_quiz_result(student_id, existing_quiz['id'])
+            
+            return {
+                "quiz_id": existing_quiz['id'],
+                "subject_name": subject_dict['name'],
+                "topic_title": topic_title,
+                "difficulty_level": difficulty_level,
+                "questions": questions,
+                "total_questions": len(questions),
+                "best_score": best_result['score'] if best_result else None,
+                "best_percentage": best_result['percentage'] if best_result else None,
+                "has_attempted": best_result is not None
+            }
+        
+        # Check if all chapters are completed (have content generated)
+        content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
+        
+        if content_key not in user_generated_content["chapters"]:
+            raise HTTPException(status_code=400, detail="No chapters found. Please generate chapters first.")
+        
+        chapters_data = user_generated_content["chapters"][content_key]
+        chapters = chapters_data["chapters"]
+        
+        # Check if all chapters have content generated
+        chapter_contents = []
+        for chapter in chapters:
+            chapter_content_key = get_chapter_content_key(
+                student_id, subject_dict['name'], difficulty_level, topic_title, chapter.title
+            )
+            
+            if chapter_content_key not in user_generated_content["chapter_content"]:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Chapter '{chapter.title}' content not generated. Please read all chapters first."
+                )
+            
+            # Get all page content for this chapter
+            chapter_data = user_generated_content["chapter_content"][chapter_content_key]
+            chapter_full_content = "\n\n".join(chapter_data['pages'])
+            chapter_contents.append(f"Chapter: {chapter.title}\n{chapter_full_content}")
+        
+        # Generate quiz questions
+        questions = generate_quiz_questions(subject_dict['name'], topic_title, difficulty_level, chapter_contents)
+        
+        # Store quiz in database
+        import uuid
+        quiz_id = str(uuid.uuid4())
+        questions_json = json.dumps([q.dict() for q in questions])
+        
+        db.create_quiz(quiz_id, student_id, subject_id, topic_title, difficulty_level, questions_json)
+        
+        return {
+            "quiz_id": quiz_id,
+            "subject_name": subject_dict['name'],
+            "topic_title": topic_title,
+            "difficulty_level": difficulty_level,
+            "questions": questions,
+            "total_questions": len(questions),
+            "best_score": None,
+            "best_percentage": None,
+            "has_attempted": False
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{subject_id}/topics/{topic_title}/quiz/submit")
+async def submit_quiz(
+    subject_id: int,
+    topic_title: str,
+    submission: QuizSubmission,
+    student_id: int = Query(..., description="Student ID for user-specific quiz submission")
+):
+    """Submit quiz answers and get results."""
+    try:
+        from urllib.parse import unquote
+        import uuid
+        import json
+        
+        topic_title = unquote(topic_title)
+        
+        # Get the quiz
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="Difficulty level required")
+        
+        existing_quiz = db.get_quiz(student_id, subject_id, topic_title, difficulty_level)
+        if not existing_quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        
+        # Verify quiz_id matches
+        if submission.quiz_id != existing_quiz['id']:
+            raise HTTPException(status_code=400, detail="Invalid quiz ID")
+        
+        # Parse questions and calculate score
+        questions_data = json.loads(existing_quiz['questions_json'])
+        questions = [QuizQuestion(**q) for q in questions_data]
+        
+        if len(submission.answers) != len(questions):
+            raise HTTPException(status_code=400, detail="Number of answers doesn't match number of questions")
+        
+        # Calculate score
+        score = 0
+        for i, answer in enumerate(submission.answers):
+            if answer == questions[i].correct_answer:
+                score += 1
+        
+        percentage = (score / len(questions)) * 100
+        
+        # Save result
+        result_id = str(uuid.uuid4())
+        answers_json = json.dumps(submission.answers)
+        
+        db.save_quiz_result(result_id, submission.quiz_id, student_id, answers_json, score, percentage)
+        
+        # Get all results to determine if this is the best score
+        all_results = db.get_quiz_results(student_id, submission.quiz_id)
+        is_best_score = score >= max([r['score'] for r in all_results])
+        
+        return QuizResultWithDetails(
+            id=result_id,
+            quiz_id=submission.quiz_id,
+            student_id=student_id,
+            answers=submission.answers,
+            score=score,
+            percentage=percentage,
+            submitted_at=datetime.now(),
+            questions=questions,
+            is_best_score=is_best_score
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{subject_id}/topics/{topic_title}/quiz/results")
+async def get_quiz_results_history(
+    subject_id: int,
+    topic_title: str,
+    student_id: int = Query(..., description="Student ID for user-specific quiz results")
+):
+    """Get quiz results history for a student."""
+    try:
+        from urllib.parse import unquote
+        import json
+        
+        topic_title = unquote(topic_title)
+        
+        # Get difficulty level
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="Difficulty level required")
+        
+        # Get quiz
+        existing_quiz = db.get_quiz(student_id, subject_id, topic_title, difficulty_level)
+        if not existing_quiz:
+            # Return empty results if no quiz exists yet
+            return {
+                "quiz_id": None,
+                "topic_title": topic_title,
+                "total_attempts": 0,
+                "best_score": None,
+                "best_percentage": None,
+                "results_history": []
+            }
+        
+        # Get all results
+        results = db.get_quiz_results(student_id, existing_quiz['id'])
+        best_result = db.get_best_quiz_result(student_id, existing_quiz['id'])
+        
+        return {
+            "quiz_id": existing_quiz['id'],
+            "topic_title": topic_title,
+            "total_attempts": len(results),
+            "best_score": best_result['score'] if best_result else None,
+            "best_percentage": best_result['percentage'] if best_result else None,
+            "results_history": [
+                {
+                    "id": r['id'],
+                    "score": r['score'],
+                    "percentage": r['percentage'],
+                    "submitted_at": r['submitted_at'],
+                    "is_best": r['score'] == best_result['score'] if best_result else False
+                }
+                for r in results
+            ]
         }
         
     except Exception as e:

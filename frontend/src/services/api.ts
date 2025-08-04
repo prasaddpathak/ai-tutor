@@ -82,6 +82,59 @@ export interface ChapterContentPage {
   difficulty_level: string
 }
 
+export interface QuizQuestion {
+  id: string
+  question: string
+  options: string[]
+  correct_answer: number
+  explanation: string
+}
+
+export interface Quiz {
+  quiz_id: string
+  subject_name: string
+  topic_title: string
+  difficulty_level: string
+  questions: QuizQuestion[]
+  total_questions: number
+  best_score: number | null
+  best_percentage: number | null
+  has_attempted: boolean
+}
+
+export interface QuizSubmission {
+  quiz_id: string
+  student_id: number
+  answers: number[]
+}
+
+export interface QuizResult {
+  id: string
+  quiz_id: string
+  student_id: number
+  answers: number[]
+  score: number
+  percentage: number
+  submitted_at: string
+  questions: QuizQuestion[]
+  is_best_score: boolean
+}
+
+export interface QuizResultsHistory {
+  quiz_id: string
+  topic_title: string
+  total_attempts: number
+  best_score: number | null
+  best_percentage: number | null
+  results_history: Array<{
+    id: string
+    score: number
+    percentage: number
+    submitted_at: string
+    is_best: boolean
+  }>
+}
+
 export interface CameraInfo {
   index: number
   name: string
@@ -212,7 +265,24 @@ export const subjectsAPI = {
         ...(aiGeneratedDescription && { ai_generated_description: aiGeneratedDescription })
       },
       { params: { student_id: studentId } }
-    )
+    ),
+
+  // Quiz API methods
+  getQuiz: (subjectId: number, topicTitle: string, studentId: number) =>
+    api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/quiz`, {
+      params: { student_id: studentId }
+    }),
+
+  submitQuiz: (subjectId: number, topicTitle: string, submission: QuizSubmission, studentId: number) =>
+    api.post(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/quiz/submit`,
+      submission,
+      { params: { student_id: studentId } }
+    ),
+
+  getQuizResults: (subjectId: number, topicTitle: string, studentId: number) =>
+    api.get(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/quiz/results`, {
+      params: { student_id: studentId }
+    })
 }
 
 // Students API
