@@ -140,9 +140,6 @@ const DifficultySelectionModal: React.FC<DifficultySelectionModalProps> = ({
         <Typography variant="body1" color="textSecondary" textAlign="center" sx={{ mb: 4, lineHeight: 1.6 }}>
           {t('subjects.difficultyInstruction')}
           <br />
-          <Box component="span" sx={{ fontSize: '0.9rem', opacity: 0.8 }}>
-            {t('subjects.difficultyChangeLater')}
-          </Box>
         </Typography>
 
         <Grid container spacing={3}>

@@ -195,7 +195,6 @@
     "chooseDifficulty": "Elegir Dificultad",
     "forSubject": "para {{subject}}",
     "difficultyInstruction": "Selecciona el nivel de dificultad de aprendizaje que mejor se adapte a tu nivel de conocimiento actual. Esto nos ayudará a personalizar el contenido para brindarte la experiencia de aprendizaje más efectiva.",
-    "difficultyChangeLater": "¡No te preocupes - siempre puedes cambiar esto más tarde en tu configuración!",
     "difficultySet": "Dificultad establecida en {{difficulty}}",
     "difficultyError": "Error al establecer la dificultad. Por favor intenta de nuevo.",
     "continueLearning": "Continuar Aprendiendo",
