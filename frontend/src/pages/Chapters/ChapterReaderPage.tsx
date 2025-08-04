@@ -156,7 +156,7 @@ const ChapterReaderPage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -239,7 +239,7 @@ const ChapterReaderPage: React.FC = () => {
           elevation={2} 
           sx={{ 
             p: 5, 
-            height: '55vh',
+            height: '60vh',
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: 3,
