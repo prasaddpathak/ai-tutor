@@ -45,7 +45,7 @@ def get_chapters_prompt(topic: str, level: str) -> str:
     return f"""
     You are an expert curriculum designer and educational specialist.
     For the topic '{topic}' at the '{level}' level, generate a detailed, 
-    chapter-level syllabus with 8-12 chapters.
+    chapter-level syllabus with 3-5 chapters.
     
     CRITICAL REQUIREMENTS:
     - Arrange chapters in OPTIMAL LEARNING SEQUENCE from basic to advanced

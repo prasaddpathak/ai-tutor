@@ -597,17 +597,19 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, st
                   }}
                 >
                   <Box>
-                    <Typography variant="body2" fontWeight="bold">
-                      Attempt #{quizResults.results_history.length - index}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" fontWeight="bold">
+                        Attempt #{quizResults.results_history.length - index}
+                      </Typography>
                       {result.is_best && (
                         <Chip
                           label="Best"
                           size="small"
                           color="success"
-                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                          sx={{ height: 20, fontSize: '0.7rem' }}
                         />
                       )}
-                    </Typography>
+                    </Box>
                     <Typography variant="caption" color="textSecondary">
                       {formatDate(result.submitted_at)}
                     </Typography>
