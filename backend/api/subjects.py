@@ -27,6 +27,7 @@ user_generated_content: Dict[str, any] = {
     "chapters": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{difficulty_level}"
     "chapter_content": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{chapter_title}_{difficulty_level}"
     "chapter_completions": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{chapter_title}_{difficulty_level}"
+    "chat_history": {},  # Format: f"{student_id}_{subject_name}_{topic_title}_{chapter_title}_{difficulty_level}"
     "generation_status": {}
 }
 
@@ -120,6 +121,7 @@ async def get_difficulty_levels():
             "Expert": "Professional/academic level, most challenging"
         }
     }
+
 
 @router.get("/{subject_id}/topics")
 async def get_topics(
@@ -666,6 +668,10 @@ class CreateCustomSubjectRequest(BaseModel):
     original_request: str
     ai_generated_description: str = None
 
+class ChatMessage(BaseModel):
+    message: str
+    current_page: int = 1
+
 @router.post("/create-custom")
 async def create_custom_subject(
     request: CreateCustomSubjectRequest,
@@ -721,4 +727,93 @@ async def create_custom_subject(
     except HTTPException:
         raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create custom subject: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to create custom subject: {str(e)}")
+
+@router.post("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/chat")
+async def chat_with_chapter(
+    subject_id: int,
+    topic_title: str,
+    chapter_title: str,
+    chat_message: ChatMessage,
+    student_id: int = Query(..., description="Student ID for user-specific chat")
+):
+    """Chat with AI tutor about chapter content."""
+    try:
+        # URL decode the parameters
+        from urllib.parse import unquote
+        topic_title = unquote(topic_title)
+        chapter_title = unquote(chapter_title)
+        
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Get difficulty level
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            raise HTTPException(status_code=400, detail="Difficulty level required")
+        
+        # Get chapter content
+        chapter_content_key = get_chapter_content_key(
+            student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
+        )
+        
+        if chapter_content_key not in user_generated_content["chapter_content"]:
+            raise HTTPException(status_code=404, detail="Chapter content not found. Please read the chapter first.")
+        
+        chapter_data = user_generated_content["chapter_content"][chapter_content_key]
+        
+        # Get current page content
+        current_page_content = ""
+        if chat_message.current_page <= len(chapter_data['pages']):
+            current_page_content = chapter_data['pages'][chat_message.current_page - 1]
+        
+        # Create a simple prompt with context
+        prompt = f"""You are an AI tutor helping a student understand educational content.
+
+CONTEXT:
+- Subject: {subject_dict['name']}
+- Topic: {topic_title}
+- Chapter: {chapter_title}
+- Difficulty Level: {difficulty_level}
+- Current Page: {current_page_content[:500]}...
+
+STUDENT QUESTION: {chat_message.message}
+
+Please provide a helpful, clear answer that matches the {difficulty_level} difficulty level and references the chapter content when relevant. Keep your response concise but thorough.
+
+TUTOR RESPONSE:"""
+        
+        # Get response from LLM
+        from backend.core.curriculum.llm_client import query_llm
+        assistant_response = query_llm(prompt)
+        
+        return {
+            "response": assistant_response,
+            "success": True,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{subject_id}/topics/{topic_title}/chapters/{chapter_title}/chat/history")
+async def get_chat_history(
+    subject_id: int,
+    topic_title: str,
+    chapter_title: str,
+    student_id: int = Query(..., description="Student ID for user-specific chat history")
+):
+    """Get chat history for a specific chapter."""
+    try:
+        # Simple test response for now
+        return {
+            "chat_history": [],
+            "message_count": 0
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 

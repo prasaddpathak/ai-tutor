@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query'
 
 import { subjectsAPI, ChapterContentPage } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import ChapterChatPanel from '../../components/Chat/ChapterChatPanel'
 
 const ChapterReaderPage: React.FC = () => {
   const navigate = useNavigate()
@@ -36,6 +37,7 @@ const ChapterReaderPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
+  const [isChatOpen, setIsChatOpen] = useState(false)
   
   const currentPage = parseInt(searchParams.get('page') || '1')
 
@@ -327,6 +329,19 @@ const ChapterReaderPage: React.FC = () => {
           </Stack>
         </Card>
       </motion.div>
+
+      {/* Chat Panel */}
+      {chapterData && student && (
+        <ChapterChatPanel
+          subjectId={parseInt(subjectId!)}
+          topicTitle={decodeURIComponent(topicTitle!)}
+          chapterTitle={decodeURIComponent(chapterTitle!)}
+          studentId={student.id}
+          currentPage={currentPage}
+          isOpen={isChatOpen}
+          onToggle={() => setIsChatOpen(!isChatOpen)}
+        />
+      )}
     </Container>
   )
 }

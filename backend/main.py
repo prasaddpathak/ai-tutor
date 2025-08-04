@@ -43,9 +43,10 @@ app.include_router(students.router, prefix="/api/students", tags=["Students"])
 app.include_router(subjects.router, prefix="/api/subjects", tags=["Subjects"])
 app.include_router(camera.router, prefix="/api/camera", tags=["Camera"])
 
-# Serve React static files in production
+# Serve React static files in production only
 frontend_dist = project_root / "frontend" / "dist"
-if frontend_dist.exists():
+import os
+if frontend_dist.exists() and os.getenv("NODE_ENV") == "production":
     app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
     
     @app.get("/")
@@ -53,12 +54,10 @@ if frontend_dist.exists():
         """Serve React app for production."""
         return FileResponse(str(frontend_dist / "index.html"))
     
-    # Catch-all route for React Router
+    # Catch-all route for React Router (only in production)
     @app.get("/{path:path}")
     async def serve_react_router(path: str):
         """Serve React app for all routes (SPA routing)."""
-        if path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="API endpoint not found")
         return FileResponse(str(frontend_dist / "index.html"))
 
 @app.on_event("startup") 

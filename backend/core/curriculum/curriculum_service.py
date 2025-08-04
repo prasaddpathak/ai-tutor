@@ -204,45 +204,6 @@ def generate_subject_recommendations(user_request: str) -> List[Dict]:
     response = query_llm(prompt)
     return _parse_subject_recommendations_response(response)
 
-def _split_content_into_pages(content: str, words_per_page: int = 400) -> List[str]:
-    """Split content into pages based on approximate word count."""
-    if not content:
-        return ["No content available"]
-    
-    words = content.split()
-    if len(words) <= words_per_page:
-        return [content]
-    
-    pages = []
-    current_page_words = []
-    
-    for word in words:
-        current_page_words.append(word)
-        
-        # Check if we should break the page
-        if len(current_page_words) >= words_per_page:
-            # Try to find a good break point (end of sentence or paragraph)
-            page_text = ' '.join(current_page_words)
-            
-            # Look for sentence endings near the target length
-            sentences = page_text.split('. ')
-            if len(sentences) > 1:
-                # Keep all but the last incomplete sentence
-                complete_sentences = '. '.join(sentences[:-1]) + '.'
-                remaining_words = sentences[-1].split()
-                
-                pages.append(complete_sentences)
-                current_page_words = remaining_words
-            else:
-                # No good break point, just split at word limit
-                pages.append(page_text)
-                current_page_words = []
-    
-    # Add remaining words as the last page
-    if current_page_words:
-        pages.append(' '.join(current_page_words))
-    
-    return pages
 
 def generate_paginated_chapter_content(chapter_title: str, topic_title: str, subject_name: str, difficulty_level: str) -> Dict:
     """Generate comprehensive, paginated content for a specific chapter."""
