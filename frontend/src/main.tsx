@@ -80,6 +80,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <App />
           <Toaster
             position="top-right"
+            containerStyle={{
+              top: 80,
+            }}
             toastOptions={{
               duration: 4000,
               style: {
@@ -92,4 +95,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>
-) 
+)

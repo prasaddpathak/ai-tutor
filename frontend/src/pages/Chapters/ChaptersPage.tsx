@@ -9,7 +9,7 @@ import {
   CircularProgress,
   Alert,
   Skeleton,
-  Paper,
+
   Grid,
   Chip,
   IconButton,
@@ -24,7 +24,7 @@ import {
 import { 
   ArrowBack, 
   MenuBook,
-  AutoAwesome, 
+ 
   CheckCircle, 
   Refresh,
   Quiz,
@@ -335,7 +335,6 @@ const ChaptersPage: React.FC = () => {
                   chapters={chaptersData.chapters}
                   subjectId={parseInt(subjectId!)}
                   topicTitle={decodeURIComponent(topicTitle!)}
-                  studentId={student?.id!}
                   quizResults={quizResults}
                   onCheckResults={() => setShouldFetchResults(true)}
                 />
@@ -499,12 +498,11 @@ interface QuizCardProps {
   chapters: any[]
   subjectId: number
   topicTitle: string
-  studentId: number
   quizResults?: QuizResultsHistory
   onCheckResults: () => void
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, studentId, quizResults, onCheckResults }) => {
+const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, quizResults, onCheckResults }) => {
   const navigate = useNavigate()
   
   // Check if all chapters are completed (have content generated)
@@ -516,9 +514,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, st
     navigate(`/subjects/${subjectId}/topics/${encodeURIComponent(topicTitle)}/quiz`)
   }
 
-  const handleCheckResults = () => {
-    setShouldFetchResults(true)
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
