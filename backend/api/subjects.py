@@ -767,10 +767,26 @@ async def chat_with_chapter(
         
         chapter_data = user_generated_content["chapter_content"][chapter_content_key]
         
+        # Get chat history for this chapter (initialize if not exists)
+        chat_history_key = chapter_content_key
+        if chat_history_key not in user_generated_content["chat_history"]:
+            user_generated_content["chat_history"][chat_history_key] = []
+        
+        chat_history = user_generated_content["chat_history"][chat_history_key]
+        
         # Get current page content
         current_page_content = ""
         if chat_message.current_page <= len(chapter_data['pages']):
             current_page_content = chapter_data['pages'][chat_message.current_page - 1]
+        
+        # Build context with recent chat history for better continuity
+        recent_conversation = ""
+        if chat_history:
+            recent_conversation = "\n".join([
+                f"Student: {msg['user_message']}\nTutor: {msg['assistant_message']}"
+                for msg in chat_history[-3:]  # Last 3 exchanges for context
+            ])
+            recent_conversation = f"\n\nRECENT CONVERSATION:\n{recent_conversation}\n"
         
         # Create a simple prompt with context
         prompt = f"""You are an AI tutor helping a student understand educational content.
@@ -780,7 +796,7 @@ CONTEXT:
 - Topic: {topic_title}
 - Chapter: {chapter_title}
 - Difficulty Level: {difficulty_level}
-- Current Page: {current_page_content[:500]}...
+- Current Page: {current_page_content[:500]}...{recent_conversation}
 
 STUDENT QUESTION: {chat_message.message}
 
@@ -791,6 +807,18 @@ TUTOR RESPONSE:"""
         # Get response from LLM
         from backend.core.curriculum.llm_client import query_llm
         assistant_response = query_llm(prompt)
+        
+        # Store the conversation in chat history
+        chat_history.append({
+            "user_message": chat_message.message,
+            "assistant_message": assistant_response,
+            "current_page": chat_message.current_page,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Keep only last 50 conversations to manage memory
+        if len(chat_history) > 50:
+            user_generated_content["chat_history"][chat_history_key] = chat_history[-50:]
         
         return {
             "response": assistant_response,
@@ -810,10 +838,42 @@ async def get_chat_history(
 ):
     """Get chat history for a specific chapter."""
     try:
-        # Simple test response for now
+        # URL decode the parameters
+        from urllib.parse import unquote
+        topic_title = unquote(topic_title)
+        chapter_title = unquote(chapter_title)
+        
+        # Get subject info
+        with db.get_connection() as conn:
+            subject = conn.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,)).fetchone()
+            if not subject:
+                raise HTTPException(status_code=404, detail="Subject not found")
+        
+        subject_dict = dict(subject)
+        
+        # Get difficulty level
+        difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
+        if not difficulty_level:
+            return {
+                "chat_history": [],
+                "message_count": 0
+            }
+        
+        # Get chat history
+        chat_history_key = get_chapter_content_key(
+            student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
+        )
+        
+        chat_history = user_generated_content["chat_history"].get(chat_history_key, [])
+        
         return {
-            "chat_history": [],
-            "message_count": 0
+            "subject_name": subject_dict['name'],
+            "topic_title": topic_title,
+            "chapter_title": chapter_title,
+            "difficulty_level": difficulty_level,
+            "chat_history": chat_history,
+            "message_count": len(chat_history)
         }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

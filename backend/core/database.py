@@ -17,7 +17,7 @@ class DatabaseManager:
     
     def __init__(self, db_path: str = None):
         self.db_path = db_path or str(DB_PATH)
-        # self.init_database()
+        self.init_database()
     
     def get_connection(self) -> sqlite3.Connection:
         """Get a database connection with row factory."""

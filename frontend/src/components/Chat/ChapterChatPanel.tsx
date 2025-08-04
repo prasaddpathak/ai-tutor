@@ -65,7 +65,14 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
     if (isOpen) {
       loadChatHistory()
     }
-  }, [isOpen, subjectId, topicTitle, chapterTitle, studentId])
+  }, [subjectId, topicTitle, chapterTitle, studentId]) // Removed isOpen dependency
+
+  // Also load on mount if chat is already open
+  useEffect(() => {
+    if (isOpen) {
+      loadChatHistory()
+    }
+  }, [isOpen])
 
   const loadChatHistory = async () => {
     try {
@@ -75,25 +82,33 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
       
       if (response.ok) {
         const data = await response.json()
-        const historyMessages: ChatMessage[] = data.chat_history.map((msg: any, index: number) => [
-          {
-            id: `${index}-user`,
-            type: 'user' as const,
-            content: msg.user_message,
-            timestamp: msg.timestamp,
-          },
-          {
-            id: `${index}-assistant`,
-            type: 'assistant' as const,
-            content: msg.assistant_message,
-            timestamp: msg.timestamp,
-          }
-        ]).flat()
+        console.log('Loaded chat history:', data) // Debug log
         
-        setMessages(historyMessages)
+        if (data.chat_history && data.chat_history.length > 0) {
+          const historyMessages: ChatMessage[] = data.chat_history.map((msg: any, index: number) => [
+            {
+              id: `${index}-user`,
+              type: 'user' as const,
+              content: msg.user_message,
+              timestamp: msg.timestamp,
+            },
+            {
+              id: `${index}-assistant`,
+              type: 'assistant' as const,
+              content: msg.assistant_message,
+              timestamp: msg.timestamp,
+            }
+          ]).flat()
+          
+          setMessages(historyMessages)
+        } else {
+          // No history, start fresh
+          setMessages([])
+        }
       }
     } catch (error) {
       console.error('Failed to load chat history:', error)
+      setMessages([]) // Fallback to empty messages
     }
   }
 
@@ -333,6 +348,7 @@ const ChapterChatPanel: React.FC<ChapterChatPanelProps> = ({
                     display: 'flex',
                     justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
                     mb: 1,
+                    mx: 2,
                   }}
                 >
                   <Paper
