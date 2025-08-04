@@ -239,21 +239,26 @@ const ChapterReaderPage: React.FC = () => {
           elevation={2} 
           sx={{ 
             p: 5, 
-            minHeight: '60vh',
+            height: '55vh',
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: 3,
             backgroundColor: 'background.paper',
+            overflow: 'hidden',
           }}
         >
           <Box
             sx={{
-              maxWidth: '800px',
+              maxWidth: '95%',
+              pl: 3,
+              pr: 3,
               mx: 'auto',
               lineHeight: 1.8,
               fontSize: '1.1rem',
               color: 'text.primary',
               textAlign: 'justify',
+              overflowY: 'auto',
+              height: '100%',
               '& p': {
                 mb: 3,
                 textIndent: '2em',
