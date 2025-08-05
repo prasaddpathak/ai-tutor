@@ -942,6 +942,10 @@ async def chat_with_chapter(
                 detail="Chapter content not found. Please read the chapter first before starting a chat."
             )
         
+        # Get student language preference
+        student = db.get_student_by_id(student_id)
+        language_code = student['language_preference'] if student else 'en'
+        
         # Get chat history from database
         chat_history = db.get_chat_history(
             student_id, subject_id, topic_title, chapter_title, difficulty_level
@@ -961,6 +965,13 @@ async def chat_with_chapter(
             ])
             recent_conversation = f"\n\nRECENT CONVERSATION:\n{recent_conversation}\n"
         
+        # Language specific instructions
+        language_instruction = ""
+        if language_code == 'es':
+            language_instruction = "\n\nIMPORTANT: You MUST respond ONLY in Spanish (Español). Do not use any English words or phrases in your response."
+        elif language_code == 'en':
+            language_instruction = "\n\nIMPORTANT: You MUST respond ONLY in English. Do not use any Spanish or other language words or phrases in your response."
+        
         # Create a simple prompt with context
         prompt = f"""You are an AI tutor helping a student understand educational content.
 
@@ -974,7 +985,7 @@ CONTEXT:
 
 STUDENT QUESTION: {chat_message.message}
 
-Please provide a helpful, clear answer that matches the {difficulty_level} difficulty level and references the chapter content when relevant. Keep your response concise but thorough. Reponses should be always less than 100 words.
+Please provide a helpful, clear answer that matches the {difficulty_level} difficulty level and references the chapter content when relevant. Keep your response concise but thorough. Reponses should be always less than 100 words.{language_instruction}
 
 TUTOR RESPONSE:"""
         
