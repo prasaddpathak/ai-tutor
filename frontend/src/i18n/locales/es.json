@@ -28,7 +28,7 @@
     "info": "Información"
   },
   "navigation": {
-    "brand": "TerraTeach",
+    "brand": "EduLibreX",
     "subjects": "Materias",
     "topics": "Temas", 
     "chapters": "Capítulos",
@@ -37,7 +37,7 @@
     "language": "Idioma"
   },
   "landing": {
-    "title": "Aprende con TerraTeach",
+    "title": "Aprende con EduLibreX",
     "subtitle": "Aprendizaje personalizado impulsado por IA, diseñado para funcionar completamente sin conexión",
     "description": "Educación sostenible impulsada por IA que crece contigo. Olvídate de contraseñas y nombres de usuario - solo mira a tu cámara para acceder al aprendizaje personalizado impulsado por Google Gemma 3n ejecutándose en NVIDIA Jetson Nano.",
     "getStarted": "Comenzar",
@@ -73,23 +73,23 @@
       }
     },
     "whyChoose": {
-      "title": "¿Por qué Elegir TerraTeach?",
+      "title": "¿Por qué Elegir EduLibreX?",
       "subtitle": "Nuestra plataforma ecológica combina tecnología de IA de vanguardia con prácticas de aprendizaje sostenibles para el futuro de la educación."
     },
     "poweredBy": {
       "title": "Impulsado Por",
-      "description": "TerraTeach aprovecha el modelo de lenguaje Google Gemma 3n de vanguardia ejecutándose eficientemente en hardware NVIDIA Jetson Nano, ofreciendo educación IA poderosa mientras mantiene sostenibilidad y capacidad sin conexión.",
+      "description": "EduLibreX aprovecha el modelo de lenguaje Google Gemma 3n de vanguardia ejecutándose eficientemente en hardware NVIDIA Jetson Nano, ofreciendo educación IA poderosa mientras mantiene sostenibilidad y capacidad sin conexión.",
       "gemma": "Modelo de Lenguaje IA Avanzado",
       "jetson": "Computación de Borde Eficiente en Energía"
     },
     "cta": {
       "title": "¿Listo para Transformar tu Aprendizaje?",
-      "description": "Únete a miles de estudiantes que ya están aprendiendo con la plataforma educativa sostenible e impulsada por IA de TerraTeach.",
+      "description": "Únete a miles de estudiantes que ya están aprendiendo con la plataforma educativa sostenible e impulsada por IA de EduLibreX.",
       "button": "Comenzar - ¡No Necesitas Contraseñas!"
     },
     "footer": {
       "description": "Educación sostenible impulsada por IA para un futuro más verde. Impulsado por Google Gemma 3n en NVIDIA Jetson Nano con principios ecológicos.",
-      "copyright": "© 2024 TerraTeach. Todos los derechos reservados."
+      "copyright": "© 2024 EduLibreX. Todos los derechos reservados."
     }
   },
   "auth": {

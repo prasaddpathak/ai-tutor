@@ -28,7 +28,7 @@
     "info": "Info"
   },
   "navigation": {
-    "brand": "TerraTeach",
+    "brand": "EduLibreX",
     "subjects": "Subjects",
     "topics": "Topics", 
     "chapters": "Chapters",
@@ -37,7 +37,7 @@
     "language": "Language"
   },
   "landing": {
-    "title": "Learn with TerraTeach",
+    "title": "Learn with EduLibreX",
     "subtitle": "Personalized learning powered by AI, designed for complete offline operation",
     "description": "Sustainable AI-powered education that grows with you. Skip the hassle of passwords and usernames - just look at your camera to access personalized learning powered by Google Gemma 3n running on NVIDIA Jetson Nano.",
     "getStarted": "Get Started",
@@ -73,23 +73,23 @@
       }
     },
     "whyChoose": {
-      "title": "Why Choose TerraTeach?",
+      "title": "Why Choose EduLibreX?",
       "subtitle": "Our eco-friendly platform combines cutting-edge AI technology with sustainable learning practices for the future of education."
     },
     "poweredBy": {
       "title": "Powered By",
-      "description": "TerraTeach harnesses the cutting-edge Google Gemma 3n language model running efficiently on NVIDIA Jetson Nano hardware, delivering powerful AI education while maintaining sustainability and offline capability.",
+      "description": "EduLibreX harnesses the cutting-edge Google Gemma 3n language model running efficiently on NVIDIA Jetson Nano hardware, delivering powerful AI education while maintaining sustainability and offline capability.",
       "gemma": "Advanced AI Language Model",
       "jetson": "Energy-Efficient Edge Computing"
     },
     "cta": {
       "title": "Ready to Transform Your Learning?",
-      "description": "Join thousands of students already learning with TerraTeach's AI-powered, sustainable education platform.",
+      "description": "Join thousands of students already learning with EduLibreX's AI-powered, sustainable education platform.",
       "button": "Get Started - No Passwords Needed!"
     },
     "footer": {
       "description": "Sustainable AI-powered education for a greener future. Powered by Google Gemma 3n on NVIDIA Jetson Nano with eco-friendly principles.",
-      "copyright": "© 2024 TerraTeach. All rights reserved."
+      "copyright": "© 2024 EduLibreX. All rights reserved."
     }
   },
   "auth": {

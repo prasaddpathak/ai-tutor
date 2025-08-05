@@ -156,12 +156,12 @@ const AuthPage: React.FC = () => {
               }}
             >
               <img
-                src="/terrateach.svg"
-                alt="TerraTeach"
+                src="/edulibrex.svg"
+                alt="EduLibreX"
                 style={{ height: 60, width: 60 }}
               />
               <Typography variant="h3" fontWeight="bold" gutterBottom sx={{ color: '#D3B651' }}>
-                TerraTeach
+                EduLibreX
               </Typography>
               <Typography variant="h6" sx={{ opacity: 0.9 }}>
                 {t('landing.subtitle')}

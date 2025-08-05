@@ -12,9 +12,9 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'AI Tutor',
-        short_name: 'AI Tutor',
-        description: 'Offline LLM Learning Platform',
+        name: 'EduLibreX',
+        short_name: 'EduLibreX',
+        description: 'Offline AI Learning Platform',
         theme_color: '#1976d2',
         background_color: '#ffffff',
         display: 'standalone',

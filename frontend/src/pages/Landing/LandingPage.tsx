@@ -92,8 +92,8 @@ const LandingPage: React.FC = () => {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <img
-                src="/terrateach.svg"
-                alt="TerraTeach"
+                src="/edulibrex.svg"
+                alt="EduLibreX"
                 style={{ height: 40, width: 40 }}
               />
               <Typography
@@ -101,7 +101,7 @@ const LandingPage: React.FC = () => {
                 fontWeight="bold"
                 sx={{ color: '#D3B651' }}
               >
-                TerraTeach
+                EduLibreX
               </Typography>
             </Box>
             <Button
@@ -223,8 +223,8 @@ const LandingPage: React.FC = () => {
                   }}
                 >
                   <img
-                    src="/terrateach.svg"
-                    alt="TerraTeach Logo"
+                    src="/edulibrex.svg"
+                    alt="EduLibreX Logo"
                     style={{
                       height: '100%',
                       width: 'auto',
@@ -469,12 +469,12 @@ const LandingPage: React.FC = () => {
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                 <img
-                  src="/terrateach.svg"
-                  alt="TerraTeach"
+                  src="/edulibrex.svg"
+                  alt="EduLibreX"
                   style={{ height: 30, width: 30 }}
                 />
                 <Typography variant="h6" fontWeight="bold" sx={{ color: '#D3B651' }}>
-                  TerraTeach
+                  EduLibreX
                 </Typography>
               </Box>
               <Typography variant="body2" sx={{ opacity: 0.8 }}>

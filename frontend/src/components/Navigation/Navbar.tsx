@@ -106,8 +106,8 @@ const Navbar: React.FC = () => {
             }}
           >
             <img
-              src="/terrateach.svg"
-              alt="TerraTeach"
+              src="/edulibrex.svg"
+              alt="EduLibreX"
               style={{ height: 40, width: 40, marginRight: 16 }}
             />
             <Typography variant="h6" fontWeight="bold" sx={{ color: '#0A5130' }}>
