@@ -227,7 +227,7 @@ const QuizPage: React.FC = () => {
         </Button>
 
         {/* Quiz Info Header */}
-        <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #B8860B 0%, #DAA520 100%)', color: 'white' }}>
+        <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)', color: 'white' }}>
           <CardContent sx={{ p: 3 }}>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
               <Quiz sx={{ fontSize: 32 }} />
@@ -485,6 +485,12 @@ interface QuizResultsProps {
 const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) => {
   const { t } = useTranslation()
   const getScoreColor = (percentage: number) => {
+    if (percentage >= 80) return '#27AE60' // Professional forest green
+    if (percentage >= 60) return '#E67E22' // Professional amber
+    return '#C0392B' // Deep burgundy
+  }
+
+  const getScoreColorName = (percentage: number) => {
     if (percentage >= 80) return 'success'
     if (percentage >= 60) return 'warning'
     return 'error'
@@ -505,7 +511,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({ result, onBack, onRetake }) =
       transition={{ duration: 0.5 }}
     >
       {/* Results Header */}
-      <Card sx={{ mb: 3, background: `linear-gradient(135deg, ${getScoreColor(result.percentage) === 'success' ? '#4CAF50' : getScoreColor(result.percentage) === 'warning' ? '#FF9800' : '#F44336'} 0%, ${getScoreColor(result.percentage) === 'success' ? '#66BB6A' : getScoreColor(result.percentage) === 'warning' ? '#FFB74D' : '#EF5350'} 100%)`, color: 'white' }}>
+      <Card sx={{ mb: 3, background: `linear-gradient(135deg, ${getScoreColor(result.percentage)} 0%, ${getScoreColor(result.percentage)}CC 100%)`, color: 'white' }}>
         <CardContent sx={{ p: 4, textAlign: 'center' }}>
           <EmojiEvents sx={{ fontSize: 64, mb: 2 }} />
           <Typography variant="h4" fontWeight="bold" gutterBottom>

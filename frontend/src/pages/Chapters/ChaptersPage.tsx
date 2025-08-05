@@ -527,9 +527,9 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
   }
 
   const getScoreColor = (percentage: number) => {
-    if (percentage >= 80) return '#4CAF50'
-    if (percentage >= 60) return '#FF9800'
-    return '#F44336'
+    if (percentage >= 80) return '#27AE60' // Professional forest green
+    if (percentage >= 60) return '#E67E22' // Professional amber
+    return '#C0392B' // Deep burgundy
   }
 
   // If quiz results exist, show results card
@@ -651,7 +651,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
         sx={{ 
           mt: 3,
           background: allChaptersCompleted 
-            ? 'linear-gradient(135deg, #B8860B 0%, #DAA520 100%)' 
+            ? 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)' 
             : 'linear-gradient(135deg, #757575 0%, #BDBDBD 100%)',
           color: 'white',
           position: 'relative',
