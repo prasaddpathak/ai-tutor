@@ -29,6 +29,7 @@ import { subjectsAPI, ChapterContentPage } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import ChapterChatPanel from '../../components/Chat/ChapterChatPanel'
 import { useTranslation } from 'react-i18next'
+import { languageService } from '../../services/languageService'
 
 const ChapterReaderPage: React.FC = () => {
   const navigate = useNavigate()
@@ -40,13 +41,17 @@ const ChapterReaderPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [isChatOpen, setIsChatOpen] = useState(false)
   
   const currentPage = parseInt(searchParams.get('page') || '1')
+  const currentLanguage = i18n.language
+
+  // React Query will automatically refetch when currentLanguage changes due to the query key
+  // No need for manual callback registration since language is in the query key
 
   const { data: chapterData, isLoading, error } = useQuery<ChapterContentPage>(
-    ['chapter-content', subjectId, topicTitle, chapterTitle, student?.id],
+    ['chapter-content', subjectId, topicTitle, chapterTitle, student?.id, currentLanguage],
     () => subjectsAPI.getChapterContent(
       parseInt(subjectId!),
       decodeURIComponent(topicTitle!),
@@ -70,7 +75,7 @@ const ChapterReaderPage: React.FC = () => {
     {
       onSuccess: () => {
         // Invalidate chapters query to update the UI with completion status
-        queryClient.invalidateQueries(['chapters', subjectId, topicTitle, student?.id])
+        queryClient.invalidateQueries(['chapters', subjectId, topicTitle, student?.id, currentLanguage])
         // Navigate back to chapters list
         navigate(`/subjects/${subjectId}/topics/${topicTitle}/chapters`)
       },

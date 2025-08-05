@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 
 import { languages, type LanguageCode } from '../../i18n'
+import { useAuthStore } from '../../stores/authStore'
+import { languageService } from '../../services/languageService'
 
 interface LanguageSelectorProps {
   variant?: 'button' | 'menu'
@@ -29,6 +31,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 }) => {
   const { i18n, t } = useTranslation()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const student = useAuthStore((state) => state.student)
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0]
 
@@ -41,8 +44,14 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }
 
   const handleLanguageChange = async (languageCode: LanguageCode) => {
-    await i18n.changeLanguage(languageCode)
-    handleMenuClose()
+    try {
+      // Use the language service to update preference and trigger content refresh
+      await languageService.updateLanguagePreference(languageCode, student?.id)
+      handleMenuClose()
+    } catch (error) {
+      console.error('Failed to change language:', error)
+      handleMenuClose()
+    }
   }
 
   // Flag emoji mapping for languages

@@ -31,17 +31,22 @@ import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { subjectsAPI } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import { useTranslation } from 'react-i18next'
+import { languageService } from '../../services/languageService'
 
 const TopicsPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId } = useParams<{ subjectId: string }>()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
+  const currentLanguage = i18n.language
+
+  // React Query will automatically refetch when currentLanguage changes due to the query key
+  // No need for manual callback registration since language is in the query key
 
   const { data: topicsData, isLoading, error, refetch } = useQuery(
-    ['topics', subjectId, student?.id],
+    ['topics', subjectId, student?.id, currentLanguage],
     () => subjectsAPI.getTopics(
       parseInt(subjectId!), 
       student!.id,
@@ -73,7 +78,7 @@ const TopicsPage: React.FC = () => {
     ),
     {
       onSuccess: (response) => {
-        queryClient.setQueryData(['topics', subjectId, student?.id], response.data)
+        queryClient.setQueryData(['topics', subjectId, student?.id, currentLanguage], response.data)
         setRegenerateDialogOpen(false)
       },
       onError: (error) => {

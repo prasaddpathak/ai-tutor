@@ -39,18 +39,23 @@ import ReactMarkdown from 'react-markdown'
 import { subjectsAPI, QuizResultsHistory } from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import { useTranslation } from 'react-i18next'
+import { languageService } from '../../services/languageService'
 
 const ChaptersPage: React.FC = () => {
   const navigate = useNavigate()
   const { subjectId, topicTitle } = useParams<{ subjectId: string; topicTitle: string }>()
   const student = useAuthStore((state) => state.student)
   const queryClient = useQueryClient()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [selectedChapter, setSelectedChapter] = React.useState<any>(null)
   const [regenerateDialogOpen, setRegenerateDialogOpen] = React.useState(false)
+  const currentLanguage = i18n.language
+
+  // React Query will automatically refetch when currentLanguage changes due to the query key
+  // No need for manual callback registration since language is in the query key
 
   const { data: chaptersData, isLoading, error } = useQuery(
-    ['chapters', subjectId, topicTitle, student?.id],
+    ['chapters', subjectId, topicTitle, student?.id, currentLanguage],
     () => subjectsAPI.getChapters(
       parseInt(subjectId!), 
       decodeURIComponent(topicTitle!), 
@@ -106,7 +111,7 @@ const ChaptersPage: React.FC = () => {
     ),
     {
       onSuccess: (response) => {
-        queryClient.setQueryData(['chapters', subjectId, topicTitle, student?.id], response.data)
+        queryClient.setQueryData(['chapters', subjectId, topicTitle, student?.id, currentLanguage], response.data)
         setRegenerateDialogOpen(false)
         setSelectedChapter(null) // Reset selected chapter
       },
@@ -307,7 +312,7 @@ const ChaptersPage: React.FC = () => {
                                   opacity: chapter.is_completed ? 0.7 : 1,
                                 }}
                               >
-                                {chapter.title}
+                                {chapter.display_title || chapter.title}
                               </Typography>
                             </Box>
                             {chapter.has_content_generated && (
@@ -367,7 +372,7 @@ const ChaptersPage: React.FC = () => {
                   style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                 >
                   <Typography variant="h4" fontWeight="bold" color="primary" sx={{ mb: 3 }}>
-                    {selectedChapter.title}
+                    {selectedChapter.display_title || selectedChapter.title}
                   </Typography>
                   
                   <Box

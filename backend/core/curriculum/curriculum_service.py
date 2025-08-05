@@ -1,13 +1,23 @@
 
 # app/curriculum/curriculum_service.py
 
-from backend.core.curriculum.llm_client import query_llm
-from backend.core.curriculum.prompts import get_topics_prompt, get_chapters_prompt, get_subject_recommendations_prompt
-from backend.models.curriculum import Topic, Chapter
+from .llm_client import query_llm
+from .prompts import get_topics_prompt, get_chapters_prompt, get_subject_recommendations_prompt
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from models.curriculum import Topic, Chapter
+from ..database import db
+from .translation_service import translation_service
 import json
 import re
-from typing import List, Dict
+import uuid
+import logging
+from typing import List, Dict, Optional
 from fastapi import HTTPException
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 def _clean_markdown_text(text: str) -> str:
     """Clean up markdown formatting from text."""
@@ -155,11 +165,103 @@ def generate_topics(subject: str, level: str, user_context: str = None) -> List[
     response = query_llm(prompt)
     return _parse_topics_response(response)
 
+def generate_and_store_topics(student_id: int, subject_id: int, subject_name: str, 
+                             difficulty_level: str, user_context: str = None) -> List[Topic]:
+    """Generate topics and store them persistently with automatic translation."""
+    logger.info(f"Generating topics for student {student_id}, subject {subject_id}")
+    
+    # Check if topics already exist
+    content_id = f"topics_{student_id}_{subject_id}_{difficulty_level}"
+    existing_content = db.get_generated_content(
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type='topics',
+        difficulty_level=difficulty_level
+    )
+    
+    if existing_content:
+        logger.info(f"Using existing topics for {content_id}")
+        topics_data = json.loads(existing_content['content_json'])
+        return [Topic(title=topic['title'], description=topic.get('description', '')) for topic in topics_data]
+    
+    # Generate new topics
+    topics = generate_topics(subject_name, difficulty_level, user_context)
+    topics_json = [{'title': topic.title, 'description': topic.description} for topic in topics]
+    
+    # Store the generated content
+    db.save_generated_content(
+        content_id=content_id,
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type='topics',
+        difficulty_level=difficulty_level,
+        content_json=json.dumps(topics_json)
+    )
+    
+    # Queue Spanish translation
+    translation_service.queue_translation(content_id, 'es')
+    
+    # Trigger translation in background (non-blocking)
+    try:
+        translation_service.translate_content(content_id, 'es')
+        logger.info(f"Spanish translation completed for topics {content_id}")
+    except Exception as e:
+        logger.error(f"Spanish translation failed for topics {content_id}: {str(e)}")
+    
+    return topics
+
 def generate_chapters(topic: str, level: str) -> List[Chapter]:
     """Generates a list of Chapter objects for a given topic and level."""
     prompt = get_chapters_prompt(topic, level)
     response = query_llm(prompt)
     return _parse_chapters_response(response)
+
+def generate_and_store_chapters(student_id: int, subject_id: int, topic_title: str,
+                               difficulty_level: str) -> List[Chapter]:
+    """Generate chapters and store them persistently with automatic translation."""
+    logger.info(f"Generating chapters for student {student_id}, topic {topic_title}")
+    
+    # Check if chapters already exist
+    content_id = f"chapters_{student_id}_{subject_id}_{topic_title}_{difficulty_level}"
+    existing_content = db.get_generated_content(
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type='chapters',
+        difficulty_level=difficulty_level,
+        topic_title=topic_title
+    )
+    
+    if existing_content:
+        logger.info(f"Using existing chapters for {content_id}")
+        chapters_data = json.loads(existing_content['content_json'])
+        return [Chapter(title=chapter['title'], content=chapter['content']) for chapter in chapters_data]
+    
+    # Generate new chapters
+    chapters = generate_chapters(topic_title, difficulty_level)
+    chapters_json = [{'title': chapter.title, 'content': chapter.content} for chapter in chapters]
+    
+    # Store the generated content
+    db.save_generated_content(
+        content_id=content_id,
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type='chapters',
+        difficulty_level=difficulty_level,
+        content_json=json.dumps(chapters_json),
+        topic_title=topic_title
+    )
+    
+    # Queue Spanish translation
+    translation_service.queue_translation(content_id, 'es')
+    
+    # Trigger translation in background (non-blocking)
+    try:
+        translation_service.translate_content(content_id, 'es')
+        logger.info(f"Spanish translation completed for chapters {content_id}")
+    except Exception as e:
+        logger.error(f"Spanish translation failed for chapters {content_id}: {str(e)}")
+    
+    return chapters
 
 def _parse_subject_recommendations_response(response: str) -> List[Dict]:
     """Parse LLM response into subject recommendation objects."""
@@ -255,3 +357,106 @@ def generate_paginated_chapter_content(chapter_title: str, topic_title: str, sub
             status_code=500, 
             detail=f"LLM failed to generate proper JSON content: {str(e)}. Raw response: {response[:200]}..."
         )
+
+def generate_and_store_chapter_content(student_id: int, subject_id: int, chapter_title: str, 
+                                      topic_title: str, subject_name: str, difficulty_level: str) -> Dict:
+    """Generate paginated chapter content and store it persistently with automatic translation."""
+    logger.info(f"Generating chapter content for student {student_id}, chapter {chapter_title}")
+    
+    # Check if chapter content already exists
+    content_id = f"chapter_detail_{student_id}_{subject_id}_{topic_title}_{chapter_title}_{difficulty_level}"
+    existing_content = db.get_generated_content(
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type='chapter_detail',
+        difficulty_level=difficulty_level,
+        topic_title=topic_title,
+        chapter_title=chapter_title
+    )
+    
+    if existing_content:
+        logger.info(f"Using existing chapter content for {content_id}")
+        chapter_data = json.loads(existing_content['content_json'])
+        return {
+            'pages': [chapter_data[f'page_{i}'] for i in range(1, 7)],
+            'summary': chapter_data['chapter_summary']
+        }
+    
+    # Generate new content
+    content_result = generate_paginated_chapter_content(chapter_title, topic_title, subject_name, difficulty_level)
+    
+    # Prepare content for storage
+    chapter_content_json = {
+        'page_1': content_result['pages'][0],
+        'page_2': content_result['pages'][1],
+        'page_3': content_result['pages'][2],
+        'page_4': content_result['pages'][3],
+        'page_5': content_result['pages'][4],
+        'page_6': content_result['pages'][5],
+        'chapter_summary': content_result['summary']
+    }
+    
+    # Store the generated content
+    db.save_generated_content(
+        content_id=content_id,
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type='chapter_detail',
+        difficulty_level=difficulty_level,
+        content_json=json.dumps(chapter_content_json),
+        topic_title=topic_title,
+        chapter_title=chapter_title
+    )
+    
+    # Queue Spanish translation
+    translation_service.queue_translation(content_id, 'es')
+    
+    # Trigger translation in background (non-blocking)
+    try:
+        translation_service.translate_content(content_id, 'es')
+        logger.info(f"Spanish translation completed for chapter content {content_id}")
+    except Exception as e:
+        logger.error(f"Spanish translation failed for chapter content {content_id}: {str(e)}")
+    
+    return content_result
+
+def get_content_by_language(student_id: int, subject_id: int, content_type: str,
+                           difficulty_level: str, language_code: str,
+                           topic_title: str = None, chapter_title: str = None, allow_fallback: bool = True) -> Optional[Dict]:
+    """Get content in specified language, optionally falling back to English if translation not available."""
+    
+    # Generate content ID
+    if content_type == 'topics':
+        content_id = f"topics_{student_id}_{subject_id}_{difficulty_level}"
+    elif content_type == 'chapters':
+        content_id = f"chapters_{student_id}_{subject_id}_{topic_title}_{difficulty_level}"
+    elif content_type == 'chapter_detail':
+        content_id = f"chapter_detail_{student_id}_{subject_id}_{topic_title}_{chapter_title}_{difficulty_level}"
+    else:
+        return None
+    
+    # Try to get translated content first
+    if language_code != 'en':
+        translated_content = translation_service.get_translated_content(content_id, language_code)
+        if translated_content:
+            return translated_content['translated_content']
+        
+        # If no fallback allowed and translation not available, return None
+        if not allow_fallback:
+            logger.info(f"No translation available for {content_id} in {language_code} and fallback disabled")
+            return None
+    
+    # Fall back to English content (only if fallback is allowed)
+    original_content = db.get_generated_content(
+        student_id=student_id,
+        subject_id=subject_id,
+        content_type=content_type,
+        difficulty_level=difficulty_level,
+        topic_title=topic_title,
+        chapter_title=chapter_title
+    )
+    
+    if original_content:
+        return json.loads(original_content['content_json'])
+    
+    return None

@@ -14,7 +14,11 @@ import json
 
 # Import from backend core modules
 from backend.core.database import db
-from backend.core.curriculum.curriculum_service import generate_topics, generate_chapters, generate_subject_recommendations
+from backend.core.curriculum.curriculum_service import (
+    generate_topics, generate_chapters, generate_subject_recommendations,
+    generate_and_store_topics, generate_and_store_chapters, 
+    generate_and_store_chapter_content, get_content_by_language
+)
 from backend.models.curriculum import (
     Subject, Topic, Chapter, GenerateTopicsRequest, GenerateChaptersRequest,
     SetSubjectDifficultyRequest, SubjectDifficultyResponse, DIFFICULTY_LEVELS,
@@ -194,14 +198,64 @@ async def get_topics(
         user_generated_content["generation_status"][content_key] = "generating"
         
         try:
+            # Get student language preference
+            student = db.get_student_by_id(student_id)
+            language_code = student['language_preference'] if student else 'en'
+            
             # Check if this subject has user preferences (original request)
             user_preference = db.get_student_subject_preference(student_id, subject_id)
             user_context = user_preference['original_request'] if user_preference else None
             
-            # Generate topics using improved curriculum service with user context
-            topics = generate_topics(subject_dict['name'], difficulty_level, user_context)
+            # First, check if content already exists in the database
+            if not force_regenerate:
+                existing_topics = get_content_by_language(
+                    student_id=student_id,
+                    subject_id=subject_id,
+                    content_type='topics',
+                    difficulty_level=difficulty_level,
+                    language_code=language_code
+                )
+                if existing_topics:
+                    topics = [Topic(title=topic['title'], description=topic.get('description', '')) 
+                             for topic in existing_topics]
+                    # Clear generation status
+                    del user_generated_content["generation_status"][content_key]
+                    subject_dict['difficulty_level'] = difficulty_level
+                    
+                    return {
+                        "subject": subject_dict,
+                        "topics": topics,
+                        "is_generated": True,
+                        "generated_at": datetime.now().isoformat(),
+                        "generating": False,
+                        "was_force_regenerated": False,
+                        "language": language_code,
+                        "content_source": "database_existing"
+                    }
             
-            # Store the results for this user
+            # Generate and store topics with automatic translation
+            topics = generate_and_store_topics(
+                student_id=student_id,
+                subject_id=subject_id,
+                subject_name=subject_dict['name'],
+                difficulty_level=difficulty_level,
+                user_context=user_context
+            )
+            
+            # If user prefers Spanish, try to get translated content
+            if language_code == 'es':
+                translated_topics = get_content_by_language(
+                    student_id=student_id,
+                    subject_id=subject_id,
+                    content_type='topics',
+                    difficulty_level=difficulty_level,
+                    language_code='es'
+                )
+                if translated_topics:
+                    topics = [Topic(title=topic['title'], description=topic.get('description', '')) 
+                             for topic in translated_topics]
+            
+            # Store in legacy cache for backward compatibility
             generated_at = datetime.now()
             user_generated_content["topics"][content_key] = {
                 "topics": topics,
@@ -220,7 +274,9 @@ async def get_topics(
                 "is_generated": True,
                 "generated_at": generated_at.isoformat(),
                 "generating": False,
-                "was_force_regenerated": force_regenerate
+                "was_force_regenerated": force_regenerate,
+                "language": language_code,
+                "content_source": "generated_new"
             }
             
         except Exception as e:
@@ -273,24 +329,136 @@ async def get_chapters(
             if content_key in user_generated_content["generation_status"]:
                 del user_generated_content["generation_status"][content_key]
         
-        # Check if content exists for this user
-        if not force_regenerate and content_key in user_generated_content["chapters"]:
-            existing_data = user_generated_content["chapters"][content_key]
-            chapters_with_content_status = []
+        # Get student language preference for database lookup
+        student = db.get_student_by_id(student_id)
+        language_code = student['language_preference'] if student else 'en'
+        
+        # First priority: Check database for ENGLISH content (always get English titles for URLs)
+        if not force_regenerate:
+            english_chapters = get_content_by_language(
+                student_id=student_id,
+                subject_id=subject_id,
+                content_type='chapters',
+                difficulty_level=difficulty_level,
+                language_code='en',  # Always get English first for consistent URLs
+                topic_title=topic_title
+            )
+            if english_chapters:
+                # Handle both list of chapters and single chapter content
+                if isinstance(english_chapters, list):
+                    chapters = [Chapter(title=chapter['title'], content=chapter['content']) 
+                               for chapter in english_chapters]
+                else:
+                    # Single chapter structure - convert to list
+                    chapters = [Chapter(title=english_chapters.get('title', topic_title), 
+                                      content=english_chapters.get('content', 'No content available'))]
+                
+                # If user wants Spanish, get translated content for display (but keep English titles for URLs)
+                if language_code == 'es':
+                    spanish_chapters = get_content_by_language(
+                        student_id=student_id,
+                        subject_id=subject_id,
+                        content_type='chapters',
+                        difficulty_level=difficulty_level,
+                        language_code='es',
+                        topic_title=topic_title
+                    )
+                    if spanish_chapters and isinstance(spanish_chapters, list):
+                        # Use Spanish content but keep English titles for URLs
+                        for i, chapter in enumerate(chapters):
+                            if i < len(spanish_chapters):
+                                chapter.content = spanish_chapters[i]['content']
+                
+                # Build chapters with content status
+                chapters_with_content_status = []
+                for i, chapter in enumerate(chapters):
+                    chapter_content_key = get_chapter_content_key(
+                        student_id, subject_dict['name'], difficulty_level, topic_title, chapter.title
+                    )
+                    has_content = chapter_content_key in user_generated_content["chapter_content"]
+                    is_completed = chapter_content_key in user_generated_content["chapter_completions"]
+                    
+                    # For Spanish users, get the translated title for display
+                    display_title = chapter.title
+                    if language_code == 'es' and spanish_chapters and isinstance(spanish_chapters, list):
+                        if i < len(spanish_chapters):
+                            display_title = spanish_chapters[i].get('title', chapter.title)
+                    
+                    chapters_with_content_status.append({
+                        "title": chapter.title,  # Always English title for URLs
+                        "display_title": display_title,  # Translated title for display
+                        "content": chapter.content,  # Translated content if available
+                        "has_content_generated": has_content,
+                        "is_completed": is_completed
+                    })
+                
+                return {
+                    "subject": subject_dict,
+                    "topic_title": topic_title,
+                    "chapters": chapters_with_content_status,
+                    "is_generated": True,
+                    "generated_at": datetime.now().isoformat(),
+                    "generating": False,
+                    "was_force_regenerated": False,
+                    "language": language_code,
+                    "content_source": "database_existing"
+                }
+        
+        # Generate new chapters and store in database
+        try:
             
-            for chapter in existing_data["chapters"]:
-                # Check if this specific chapter has content generated
-                chapter_content_key = get_chapter_content_key(
-                    student_id, subject_dict['name'], difficulty_level, topic_title, chapter.title
+            # Generate and store chapters with automatic translation
+            chapters = generate_and_store_chapters(
+                student_id=student_id,
+                subject_id=subject_id,
+                topic_title=topic_title,
+                difficulty_level=difficulty_level
+            )
+            
+            # Get Spanish translations if user prefers Spanish
+            spanish_chapters = None
+            if language_code == 'es':
+                spanish_chapters = get_content_by_language(
+                    student_id=student_id,
+                    subject_id=subject_id,
+                    content_type='chapters',
+                    difficulty_level=difficulty_level,
+                    language_code='es',
+                    topic_title=topic_title
                 )
-                has_content = chapter_content_key in user_generated_content["chapter_content"]
-                is_completed = chapter_content_key in user_generated_content["chapter_completions"]
+                if spanish_chapters and isinstance(spanish_chapters, list):
+                    # Update content but keep English titles for URLs
+                    for i, chapter in enumerate(chapters):
+                        if i < len(spanish_chapters):
+                            chapter.content = spanish_chapters[i]['content']
+            
+            # Format chapters with content status - check database for chapter detail content
+            chapters_with_content_status = []
+            for i, chapter in enumerate(chapters):
+                # Check if detailed chapter content exists in database
+                chapter_detail_content = get_content_by_language(
+                    student_id=student_id,
+                    subject_id=subject_id,
+                    content_type='chapter_detail',
+                    difficulty_level=difficulty_level,
+                    language_code='en',  # Check English since that's what gets generated first
+                    topic_title=topic_title,
+                    chapter_title=chapter.title
+                )
+                has_content = chapter_detail_content is not None
+                
+                # For Spanish users, get the translated title for display
+                display_title = chapter.title
+                if language_code == 'es' and spanish_chapters and isinstance(spanish_chapters, list):
+                    if i < len(spanish_chapters):
+                        display_title = spanish_chapters[i].get('title', chapter.title)
                 
                 chapters_with_content_status.append({
-                    "title": chapter.title,
-                    "content": chapter.content,
-                    "has_content_generated": has_content,
-                    "is_completed": is_completed
+                    "title": chapter.title,  # Always English title for URLs
+                    "display_title": display_title,  # Translated title for display
+                    "content": chapter.content,  # Translated content if available
+                    "has_content_generated": has_content,  # Based on database check
+                    "is_completed": False  # TODO: Implement completion tracking in database
                 })
             
             return {
@@ -298,64 +466,15 @@ async def get_chapters(
                 "topic_title": topic_title,
                 "chapters": chapters_with_content_status,
                 "is_generated": True,
-                "generated_at": existing_data["generated_at"].isoformat(),
+                "generated_at": datetime.now().isoformat(),
                 "generating": False,
-                "was_force_regenerated": False
-            }
-        
-        # Check if generation is in progress
-        if content_key in user_generated_content["generation_status"] and user_generated_content["generation_status"][content_key] == "generating":
-            return {
-                "subject": subject_dict,
-                "topic_title": topic_title,
-                "chapters": [],
-                "generating": True,
-                "is_generated": False,
-                "message": "Chapters are being generated. Please check back in a moment."
-            }
-        
-        # Start generation
-        user_generated_content["generation_status"][content_key] = "generating"
-        
-        try:
-            # Generate chapters using improved curriculum service
-            chapters = generate_chapters(topic_title, difficulty_level)
-            
-            # Store the results for this user
-            generated_at = datetime.now()
-            user_generated_content["chapters"][content_key] = {
-                "chapters": chapters,
-                "generated_at": generated_at
-            }
-            
-            # Clear generation status
-            del user_generated_content["generation_status"][content_key]
-            
-            # Format chapters with content status (all false since just generated)
-            chapters_with_content_status = []
-            for chapter in chapters:
-                chapters_with_content_status.append({
-                    "title": chapter.title,
-                    "content": chapter.content,
-                    "has_content_generated": False,
-                    "is_completed": False
-                })
-            
-            return {
-                "subject": subject_dict,
-                "topic_title": topic_title,
-                "chapters": chapters_with_content_status,
-                "is_generated": True,
-                "generated_at": generated_at.isoformat(),
-                "generating": False,
-                "was_force_regenerated": force_regenerate
+                "was_force_regenerated": force_regenerate,
+                "language": language_code,
+                "content_source": "database_generated"
             }
             
         except Exception as e:
-            # Clear generation status on error
-            if content_key in user_generated_content["generation_status"]:
-                del user_generated_content["generation_status"][content_key]
-            raise e
+            raise HTTPException(status_code=500, detail=f"Failed to generate chapters: {str(e)}")
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get chapters: {str(e)}")
@@ -389,59 +508,113 @@ async def get_chapter_content(
         
         content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
         
-        # Check if chapters exist for this user
-        if content_key not in user_generated_content["chapters"]:
+        # Check if chapters exist in database for this user
+        existing_chapters = get_content_by_language(
+            student_id=student_id,
+            subject_id=subject_id,
+            content_type='chapters',
+            difficulty_level=difficulty_level,
+            language_code='en',  # Check English chapters first
+            topic_title=topic_title
+        )
+        
+        if not existing_chapters:
             raise HTTPException(status_code=404, detail="Chapters not found. Please generate chapters first.")
         
-        chapters_data = user_generated_content["chapters"][content_key]
-        chapters = chapters_data["chapters"]
-        
-        # Find the requested chapter
-        chapter = None
-        for ch in chapters:
-            if ch.title == chapter_title:
-                chapter = ch
-                break
-        
-        if not chapter:
+        # Verify the requested chapter exists
+        chapter_exists = False
+        if isinstance(existing_chapters, list):
+            chapter_exists = any(ch['title'] == chapter_title for ch in existing_chapters)
+        else:
+            chapter_exists = existing_chapters.get('title') == chapter_title
+            
+        if not chapter_exists:
             raise HTTPException(status_code=404, detail="Chapter not found")
         
-        # Check if chapter content is already cached
+        # Get student language preference
+        student = db.get_student_by_id(student_id)
+        language_code = student['language_preference'] if student else 'en'
+        
+        # Check if content exists in database
         chapter_content_key = get_chapter_content_key(
             student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
         )
         
-        if chapter_content_key in user_generated_content["chapter_content"]:
-            # Return cached content
-            cached_content = user_generated_content["chapter_content"][chapter_content_key]
+        # First check the database for existing content
+        existing_content = get_content_by_language(
+            student_id=student_id,
+            subject_id=subject_id,
+            content_type='chapter_detail',
+            difficulty_level=difficulty_level,
+            language_code=language_code,
+            topic_title=topic_title,
+            chapter_title=chapter_title,
+            allow_fallback=(language_code == 'en')  # Only allow fallback for English users
+        )
+        
+        if existing_content:
+            # Return content from database - use translated chapter title if available
+            pages = [existing_content[f'page_{i}'] for i in range(1, 7)]
+            # Use translated chapter title if available, otherwise fall back to original
+            translated_chapter_title = existing_content.get('chapter_title', chapter_title)
             return {
                 "subject": subject_dict,
                 "topic_title": topic_title,
-                "chapter_title": chapter_title,
-                "total_pages": len(cached_content['pages']),
-                "pages": cached_content['pages'],  # All pages
-                "chapter_summary": cached_content['summary'],
-                "difficulty_level": difficulty_level
+                "chapter_title": translated_chapter_title,
+                "total_pages": len(pages),
+                "pages": pages,
+                "chapter_summary": existing_content['chapter_summary'],
+                "difficulty_level": difficulty_level,
+                "language": language_code,
+                "content_source": "database_existing"
             }
         
-        # Generate paginated content for this chapter only if not cached
-        from backend.core.curriculum.curriculum_service import generate_paginated_chapter_content
-        paginated_content = generate_paginated_chapter_content(
-            chapter_title, topic_title, subject_dict['name'], difficulty_level
+        # If not in database, generate new content
+        
+        # Generate and store paginated content with automatic translation
+        paginated_content = generate_and_store_chapter_content(
+            student_id=student_id,
+            subject_id=subject_id,
+            chapter_title=chapter_title,
+            topic_title=topic_title,
+            subject_name=subject_dict['name'],
+            difficulty_level=difficulty_level
         )
         
-        # Cache the generated content
-        user_generated_content["chapter_content"][chapter_content_key] = paginated_content
+        # If user prefers Spanish, try to get translated content (no English fallback)
+        display_chapter_title = chapter_title  # Default to English title
+        if language_code == 'es':
+            translated_content = get_content_by_language(
+                student_id=student_id,
+                subject_id=subject_id,
+                content_type='chapter_detail',
+                difficulty_level=difficulty_level,
+                language_code='es',
+                topic_title=topic_title,
+                chapter_title=chapter_title,
+                allow_fallback=False  # Don't fall back to English - wait for Spanish
+            )
+            if translated_content:
+                paginated_content = {
+                    'pages': [translated_content[f'page_{i}'] for i in range(1, 7)],
+                    'summary': translated_content['chapter_summary']
+                }
+                # Use translated chapter title if available
+                display_chapter_title = translated_content.get('chapter_title', chapter_title)
+        
+        # Content is already stored in database by generate_and_store_chapter_content
         
         # Return ALL pages at once
         return {
             "subject": subject_dict,
             "topic_title": topic_title,
-            "chapter_title": chapter_title,
+            "chapter_title": display_chapter_title,  # Use translated title for display
             "total_pages": len(paginated_content['pages']),
             "pages": paginated_content['pages'],  # All pages
             "chapter_summary": paginated_content['summary'],
-            "difficulty_level": difficulty_level
+            "difficulty_level": difficulty_level,
+            "language": language_code,
+            "content_source": "generated_new"
         }
         
     except HTTPException:

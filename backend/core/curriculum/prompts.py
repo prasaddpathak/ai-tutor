@@ -135,3 +135,109 @@ Return ONLY this JSON structure:
 
 RESPOND WITH ONLY THE JSON OBJECT. NO OTHER TEXT.
     """
+
+def get_translation_prompt(content_type: str, content_data: str, target_language: str = 'es') -> str:
+    """Generate prompt for translating content to target language."""
+    language_map = {
+        'es': 'Spanish',
+    }
+    target_lang_name = language_map.get(target_language, target_language)
+    
+    if content_type == 'topics':
+        return f"""
+CRITICAL: Your response must start with [ and end with ]. No other text before or after.
+DO NOT use ```json``` markdown blocks. DO NOT include any explanation.
+
+Your response must be EXACTLY a JSON array in this format:
+[
+  {{"title": "translated title", "description": "translated description"}},
+  {{"title": "translated title", "description": "translated description"}}
+]
+
+Translate the following English topics content to {target_lang_name}:
+
+{content_data}
+
+Requirements:
+- Translate all text fields (title, description) to {target_lang_name}
+- Keep educational context and meaning intact
+- Use appropriate educational terminology in {target_lang_name}
+
+REMEMBER: Start with [ and end with ]. No markdown blocks, no explanations.
+"""
+    
+    elif content_type == 'chapters':
+        return f"""
+CRITICAL: Your response must start with [ and end with ]. No other text before or after.
+DO NOT use ```json``` markdown blocks. DO NOT include any explanation.
+
+Your response must be EXACTLY a JSON array in this format:
+[
+  {{"title": "translated chapter title", "content": "translated chapter content"}},
+  {{"title": "translated chapter title", "content": "translated chapter content"}}
+]
+
+Translate the following English chapters content to {target_lang_name}:
+
+{content_data}
+
+Requirements:
+- Translate all text fields (title, content) to {target_lang_name}
+- Keep educational context and meaning intact
+- Use appropriate educational terminology in {target_lang_name}
+- Maintain paragraph breaks and structure in content
+
+REMEMBER: Start with [ and end with ]. No markdown blocks, no explanations.
+"""
+    
+    elif content_type == 'chapter_detail':
+        return f"""
+You are translating educational content to {target_lang_name}.
+
+IMPORTANT: You must return EXACTLY 7 fields in JSON format:
+- page_1, page_2, page_3, page_4, page_5, page_6, chapter_summary
+
+DO NOT use markdown code blocks. DO NOT add explanatory text.
+Start your response immediately with {{ and end with }}
+
+Required JSON structure:
+{{
+  "page_1": "your {target_lang_name} translation here",
+  "page_2": "your {target_lang_name} translation here",
+  "page_3": "your {target_lang_name} translation here",
+  "page_4": "your {target_lang_name} translation here",
+  "page_5": "your {target_lang_name} translation here",
+  "page_6": "your {target_lang_name} translation here",
+  "chapter_summary": "your {target_lang_name} translation here"
+}}
+
+Content to translate:
+{content_data}
+
+Translation rules:
+1. Translate ALL text to {target_lang_name}
+2. Keep educational terminology accurate
+3. Maintain the same content structure and depth
+4. Include ALL 6 pages plus chapter_summary
+5. Response must be valid JSON only
+
+Begin your JSON response now:
+"""
+    
+    else:
+        return f"""
+You must respond with ONLY valid JSON. No other text, no markdown, no code blocks.
+
+Translate the following English educational content to {target_lang_name}:
+
+{content_data}
+
+Requirements:
+- Maintain the exact same JSON structure as the input
+- Translate all text content to {target_lang_name}
+- Keep educational context and meaning intact
+- Use appropriate educational terminology in {target_lang_name}
+- Ensure translations are suitable for academic learning
+
+Return ONLY the translated JSON with the same structure as the input.
+"""
