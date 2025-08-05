@@ -244,7 +244,7 @@ const ChapterReaderPage: React.FC = () => {
           elevation={2} 
           sx={{ 
             p: 5, 
-            height: '60vh',
+            height: '53vh',
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: 3,
