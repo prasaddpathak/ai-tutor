@@ -268,7 +268,7 @@ const SubjectsPage: React.FC = () => {
 
       {/* Subjects Grid */}
       <Grid container spacing={3}>
-        {subjects?.map((subject, index) => {
+        {subjects?.sort((a, b) => b.id - a.id).map((subject, index) => {
           const generationStatus = getSubjectGenerationStatus(subject.name)
           
           return (
