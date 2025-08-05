@@ -926,33 +926,31 @@ async def chat_with_chapter(
                 raise HTTPException(status_code=404, detail="Subject not found")
         
         subject_dict = dict(subject)
-        
+
         # Get difficulty level
         difficulty_level = db.get_student_subject_difficulty(student_id, subject_id)
         if not difficulty_level:
             raise HTTPException(status_code=400, detail="Difficulty level required")
-        
-        # Get chapter content
-        chapter_content_key = get_chapter_content_key(
-            student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
+        # Get chapter content from database
+        chapter_data = db.get_chapter_content_from_db(
+            student_id, subject_id, topic_title, chapter_title, difficulty_level
         )
+
+        if not chapter_data:
+            raise HTTPException(
+                status_code=404, 
+                detail="Chapter content not found. Please read the chapter first before starting a chat."
+            )
         
-        if chapter_content_key not in user_generated_content["chapter_content"]:
-            raise HTTPException(status_code=404, detail="Chapter content not found. Please read the chapter first.")
-        
-        chapter_data = user_generated_content["chapter_content"][chapter_content_key]
-        
-        # Get chat history for this chapter (initialize if not exists)
-        chat_history_key = chapter_content_key
-        if chat_history_key not in user_generated_content["chat_history"]:
-            user_generated_content["chat_history"][chat_history_key] = []
-        
-        chat_history = user_generated_content["chat_history"][chat_history_key]
-        
+        # Get chat history from database
+        chat_history = db.get_chat_history(
+            student_id, subject_id, topic_title, chapter_title, difficulty_level
+        )
         # Get current page content
         current_page_content = ""
-        if chat_message.current_page <= len(chapter_data['pages']):
-            current_page_content = chapter_data['pages'][chat_message.current_page - 1]
+        if chat_message.current_page <= len(chapter_data):
+            current_page_content = chapter_data[f'page_{chat_message.current_page}']
+        
         
         # Build context with recent chat history for better continuity
         recent_conversation = ""
@@ -971,11 +969,12 @@ CONTEXT:
 - Topic: {topic_title}
 - Chapter: {chapter_title}
 - Difficulty Level: {difficulty_level}
-- Current Page: {current_page_content[:500]}...{recent_conversation}
+- Current Page: {current_page_content}
+- Recent Conversations: {recent_conversation}
 
 STUDENT QUESTION: {chat_message.message}
 
-Please provide a helpful, clear answer that matches the {difficulty_level} difficulty level and references the chapter content when relevant. Keep your response concise but thorough.
+Please provide a helpful, clear answer that matches the {difficulty_level} difficulty level and references the chapter content when relevant. Keep your response concise but thorough. Reponses should be always less than 100 words.
 
 TUTOR RESPONSE:"""
         
@@ -983,17 +982,17 @@ TUTOR RESPONSE:"""
         from backend.core.curriculum.llm_client import query_llm
         assistant_response = query_llm(prompt)
         
-        # Store the conversation in chat history
-        chat_history.append({
-            "user_message": chat_message.message,
-            "assistant_message": assistant_response,
-            "current_page": chat_message.current_page,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # Keep only last 50 conversations to manage memory
-        if len(chat_history) > 50:
-            user_generated_content["chat_history"][chat_history_key] = chat_history[-50:]
+        # Store the conversation in database
+        db.add_chat_message(
+            student_id=student_id,
+            subject_id=subject_id,
+            topic_title=topic_title,
+            chapter_title=chapter_title,
+            difficulty_level=difficulty_level,
+            user_message=chat_message.message,
+            assistant_message=assistant_response,
+            current_page=chat_message.current_page
+        )
         
         return {
             "response": assistant_response,
@@ -1034,13 +1033,11 @@ async def get_chat_history(
                 "message_count": 0
             }
         
-        # Get chat history
-        chat_history_key = get_chapter_content_key(
-            student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
+        # Get chat history from database
+        chat_history = db.get_chat_history(
+            student_id, subject_id, topic_title, chapter_title, difficulty_level
         )
-        
-        chat_history = user_generated_content["chat_history"].get(chat_history_key, [])
-        
+
         return {
             "subject_name": subject_dict['name'],
             "topic_title": topic_title,

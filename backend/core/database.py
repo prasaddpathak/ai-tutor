@@ -178,6 +178,24 @@ class DatabaseManager:
                     )
                 ''')
                 
+                # Chat history table
+                conn.execute('''
+                    CREATE TABLE chat_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        student_id INTEGER NOT NULL,
+                        subject_id INTEGER NOT NULL,
+                        topic_title TEXT NOT NULL,
+                        chapter_title TEXT NOT NULL,
+                        difficulty_level TEXT NOT NULL CHECK (difficulty_level IN ('Foundation', 'Intermediate', 'Advanced', 'Expert')),
+                        user_message TEXT NOT NULL,
+                        assistant_message TEXT NOT NULL,
+                        current_page INTEGER DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (student_id) REFERENCES students (id),
+                        FOREIGN KEY (subject_id) REFERENCES subjects (id)
+                    )
+                ''')
+                
                 # Initialize default subjects
                 self._init_default_subjects(conn)
                 conn.commit()
@@ -494,6 +512,51 @@ class DatabaseManager:
                 VALUES (?, ?, ?, '', 'pending')
             ''', (translation_id, content_id, language_code))
             return translation_id
+    
+    # Chat functionality methods
+    def add_chat_message(self, student_id: int, subject_id: int, topic_title: str, 
+                        chapter_title: str, difficulty_level: str, user_message: str, 
+                        assistant_message: str, current_page: int = 1) -> None:
+        """Add a chat message to the database."""
+        with self.get_connection() as conn:
+            conn.execute('''
+                INSERT INTO chat_history 
+                (student_id, subject_id, topic_title, chapter_title, difficulty_level, 
+                 user_message, assistant_message, current_page)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (student_id, subject_id, topic_title, chapter_title, difficulty_level,
+                  user_message, assistant_message, current_page))
+    
+    def get_chat_history(self, student_id: int, subject_id: int, topic_title: str, 
+                        chapter_title: str, difficulty_level: str, limit: int = 50) -> List[Dict]:
+        """Get chat history for a specific chapter."""
+        with self.get_connection() as conn:
+            rows = conn.execute('''
+                SELECT user_message, assistant_message, current_page, created_at
+                FROM chat_history
+                WHERE student_id = ? AND subject_id = ? AND topic_title = ? 
+                      AND chapter_title = ? AND difficulty_level = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+            ''', (student_id, subject_id, topic_title, chapter_title, difficulty_level, limit)).fetchall()
+            # Return in chronological order (oldest first)
+            return [dict(row) for row in reversed(rows)]
+    
+    def get_chapter_content_from_db(self, student_id: int, subject_id: int, topic_title: str, 
+                                   chapter_title: str, difficulty_level: str) -> Optional[Dict]:
+        """Get chapter content from the database."""
+        with self.get_connection() as conn:
+            row = conn.execute('''
+                SELECT content_json
+                FROM generated_content
+                WHERE student_id = ? AND subject_id = ? AND content_type = 'chapter_detail'
+                      AND topic_title = ? AND chapter_title = ? AND difficulty_level = ?
+            ''', (student_id, subject_id, topic_title, chapter_title, difficulty_level)).fetchone()
+            
+            if row:
+                import json
+                return json.loads(row['content_json'])
+            return None
 
 # Global database instance
 db = DatabaseManager()
