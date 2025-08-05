@@ -291,7 +291,7 @@ const TopicsPage: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
                         <Typography variant="h5" fontWeight="bold" color="primary">
-                          {topic.title}
+                          {topic.display_title || topic.title}
                         </Typography>
                         {hasChapters && (
                           <Tooltip title={t('topics.hasChaptersTooltip')}>

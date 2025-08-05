@@ -168,19 +168,7 @@ async def get_topics(
             if content_key in user_generated_content["generation_status"]:
                 del user_generated_content["generation_status"][content_key]
         
-        # Check if content exists for this user
-        if not force_regenerate and content_key in user_generated_content["topics"]:
-            existing_data = user_generated_content["topics"][content_key]
-            # Add difficulty level to subject object
-            subject_dict['difficulty_level'] = difficulty_level
-            return {
-                "subject": subject_dict,
-                "topics": existing_data["topics"],
-                "is_generated": True,
-                "generated_at": existing_data["generated_at"].isoformat(),
-                "generating": False,
-                "was_force_regenerated": False
-            }
+        # Legacy cache check removed - now using database-first approach with display_title support
         
         # Check if generation is in progress
         if content_key in user_generated_content["generation_status"] and user_generated_content["generation_status"][content_key] == "generating":
@@ -208,23 +196,51 @@ async def get_topics(
             
             # First, check if content already exists in the database
             if not force_regenerate:
-                existing_topics = get_content_by_language(
+                # Always get English topics first (for consistent URLs)
+                english_topics = get_content_by_language(
                     student_id=student_id,
                     subject_id=subject_id,
                     content_type='topics',
                     difficulty_level=difficulty_level,
-                    language_code=language_code
+                    language_code='en'
                 )
-                if existing_topics:
-                    topics = [Topic(title=topic['title'], description=topic.get('description', '')) 
-                             for topic in existing_topics]
+                if english_topics:
+                    # Create base topics with English titles
+                    topics_data = []
+                    
+                    # If user wants Spanish, get Spanish translations for display
+                    spanish_topics = None
+                    if language_code == 'es':
+                        spanish_topics = get_content_by_language(
+                            student_id=student_id,
+                            subject_id=subject_id,
+                            content_type='topics',
+                            difficulty_level=difficulty_level,
+                            language_code='es'
+                        )
+                    
+                    # Build topic objects with both English (for URLs) and display titles
+                    for i, topic in enumerate(english_topics):
+                        topic_data = {
+                            "title": topic['title'],  # Always English for URLs
+                            "description": topic.get('description', ''),
+                            "display_title": topic['title']  # Default to English
+                        }
+                        
+                        # Override with Spanish display title if available
+                        if spanish_topics and i < len(spanish_topics):
+                            topic_data["display_title"] = spanish_topics[i]['title']
+                            topic_data["description"] = spanish_topics[i].get('description', topic_data["description"])
+                        
+                        topics_data.append(topic_data)
+                    
                     # Clear generation status
                     del user_generated_content["generation_status"][content_key]
                     subject_dict['difficulty_level'] = difficulty_level
                     
                     return {
                         "subject": subject_dict,
-                        "topics": topics,
+                        "topics": topics_data,
                         "is_generated": True,
                         "generated_at": datetime.now().isoformat(),
                         "generating": False,
@@ -234,7 +250,7 @@ async def get_topics(
                     }
             
             # Generate and store topics with automatic translation
-            topics = generate_and_store_topics(
+            english_topics = generate_and_store_topics(
                 student_id=student_id,
                 subject_id=subject_id,
                 subject_name=subject_dict['name'],
@@ -242,23 +258,39 @@ async def get_topics(
                 user_context=user_context
             )
             
+            # Build topic data with both English titles (for URLs) and display titles
+            topics_data = []
+            spanish_topics = None
+            
             # If user prefers Spanish, try to get translated content
             if language_code == 'es':
-                translated_topics = get_content_by_language(
+                spanish_topics = get_content_by_language(
                     student_id=student_id,
                     subject_id=subject_id,
                     content_type='topics',
                     difficulty_level=difficulty_level,
                     language_code='es'
                 )
-                if translated_topics:
-                    topics = [Topic(title=topic['title'], description=topic.get('description', '')) 
-                             for topic in translated_topics]
             
-            # Store in legacy cache for backward compatibility
+            # Build response with English titles for URLs and display titles for UI
+            for i, topic in enumerate(english_topics):
+                topic_data = {
+                    "title": topic.title,  # Always English for URLs
+                    "description": topic.description or '',
+                    "display_title": topic.title  # Default to English
+                }
+                
+                # Override with Spanish display title if available
+                if spanish_topics and i < len(spanish_topics):
+                    topic_data["display_title"] = spanish_topics[i]['title']
+                    topic_data["description"] = spanish_topics[i].get('description', topic_data["description"])
+                
+                topics_data.append(topic_data)
+            
+            # Store in legacy cache for backward compatibility (using English topics)
             generated_at = datetime.now()
             user_generated_content["topics"][content_key] = {
-                "topics": topics,
+                "topics": english_topics,
                 "generated_at": generated_at
             }
             
@@ -270,7 +302,7 @@ async def get_topics(
             
             return {
                 "subject": subject_dict,
-                "topics": topics,
+                "topics": topics_data,
                 "is_generated": True,
                 "generated_at": generated_at.isoformat(),
                 "generating": False,
