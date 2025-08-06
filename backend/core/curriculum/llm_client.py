@@ -7,36 +7,34 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_LLM_URL = os.getenv("BASE_LLM_URL")
-if not BASE_LLM_URL:
-    raise ValueError("BASE_LLM_URL not found in .env file")
+BASE_LLM_URL = os.getenv("BASE_LLM_URL", "http://localhost:11434")  # Default Ollama port
+LLM_MODEL = os.getenv("LLM_MODEL", "hf.co/unsloth/gemma-3n-E2B-it-GGUF")  # Gemma 3n E2B IT model
 
 def query_llm(prompt: str) -> str:
-    """Sends a prompt to the local LLM and returns the response."""
+    """Sends a prompt to Ollama and returns the response."""
     headers = {"Content-Type": "application/json"}
     data = {
-        "model": "local-model",  # some local models require this
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7,
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.7,
+        }
     }
 
     try:
-        response = requests.post(f"{BASE_LLM_URL}/v1/chat/completions", headers=headers, json=data)
+        response = requests.post(f"{BASE_LLM_URL}/api/generate", headers=headers, json=data)
         response.raise_for_status()
         
         json_response = response.json()
 
-        if "choices" not in json_response or not json_response["choices"]:
-            error_details = json_response.get("error", {}).get("message", str(json_response))
-            raise RuntimeError(f"LLM API returned no choices. Details: {error_details}")
+        if "response" not in json_response:
+            error_details = json_response.get("error", str(json_response))
+            raise RuntimeError(f"Ollama API returned no response. Details: {error_details}")
 
-        first_choice = json_response["choices"][0]
-        if "message" not in first_choice or "content" not in first_choice["message"]:
-            raise RuntimeError(f"LLM API response is malformed. Full response: {json_response}")
-
-        return first_choice["message"]["content"]
+        return json_response["response"].strip()
 
     except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"Failed to connect to LLM: {e}") from e
+        raise RuntimeError(f"Failed to connect to Ollama: {e}") from e
     except KeyError as e:
-        raise RuntimeError(f"Unexpected LLM API response format. Missing key: {e}") from e
+        raise RuntimeError(f"Unexpected Ollama API response format. Missing key: {e}") from e

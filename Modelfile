@@ -1,0 +1,2 @@
+FROM hf.co/unsloth/gemma-3n-E2B-it-GGUF
+PARAMETER num_ctx 12000
