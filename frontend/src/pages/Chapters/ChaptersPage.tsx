@@ -70,7 +70,7 @@ const ChaptersPage: React.FC = () => {
 
   // Fetch quiz results if all chapters are completed
   const allChaptersCompleted = chaptersData?.chapters ? 
-    chaptersData.chapters.every((chapter: any) => chapter.has_content_generated) : false
+    chaptersData.chapters.every((chapter: any) => chapter.is_completed) : false
 
   // State to control when to fetch quiz results (only after user has taken quiz)
   const [shouldFetchResults, setShouldFetchResults] = React.useState(false)
@@ -511,9 +511,9 @@ const QuizCard: React.FC<QuizCardProps> = ({ chapters, subjectId, topicTitle, qu
   const navigate = useNavigate()
   const { t } = useTranslation()
   
-  // Check if all chapters are completed (have content generated)
-  const allChaptersCompleted = chapters.every(chapter => chapter.has_content_generated)
-  const completedCount = chapters.filter(chapter => chapter.has_content_generated).length
+  // Check if all chapters are completed (actually read by user)
+  const allChaptersCompleted = chapters.every(chapter => chapter.is_completed)
+  const completedCount = chapters.filter(chapter => chapter.is_completed).length
   const totalCount = chapters.length
 
   const handleTakeQuiz = () => {

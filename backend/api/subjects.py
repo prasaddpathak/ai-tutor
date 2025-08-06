@@ -408,7 +408,17 @@ async def get_chapters(
                         student_id, subject_dict['name'], difficulty_level, topic_title, chapter.title
                     )
                     has_content = chapter_content_key in user_generated_content["chapter_content"]
-                    is_completed = chapter_content_key in user_generated_content["chapter_completions"]
+                    
+                    # Check completion status from database (fallback to in-memory)
+                    with db.get_connection() as conn:
+                        completion_record = conn.execute("""
+                            SELECT completed FROM student_progress 
+                            WHERE student_id = ? AND subject_id = ? AND topic = ? AND chapter = ?
+                        """, (student_id, subject_id, topic_title, chapter.title)).fetchone()
+                        is_completed_db = bool(completion_record and completion_record[0] == 1)
+                    
+                    # Use database completion status, fallback to in-memory
+                    is_completed = is_completed_db or (chapter_content_key in user_generated_content["chapter_completions"])
                     
                     # For Spanish users, get the translated title for display
                     display_title = chapter.title
@@ -479,6 +489,14 @@ async def get_chapters(
                 )
                 has_content = chapter_detail_content is not None
                 
+                # Check completion status from database
+                with db.get_connection() as conn:
+                    completion_record = conn.execute("""
+                        SELECT completed FROM student_progress 
+                        WHERE student_id = ? AND subject_id = ? AND topic = ? AND chapter = ?
+                    """, (student_id, subject_id, topic_title, chapter.title)).fetchone()
+                    is_completed = bool(completion_record and completion_record[0] == 1)
+                
                 # For Spanish users, get the translated title for display
                 display_title = chapter.title
                 if language_code == 'es' and spanish_chapters and isinstance(spanish_chapters, list):
@@ -490,7 +508,7 @@ async def get_chapters(
                     "display_title": display_title,  # Translated title for display
                     "content": chapter.content,  # Translated content if available
                     "has_content_generated": has_content,  # Based on database check
-                    "is_completed": False  # TODO: Implement completion tracking in database
+                    "is_completed": is_completed  # Based on database completion tracking
                 })
             
             return {
@@ -681,7 +699,7 @@ async def complete_chapter(
             student_id, subject_dict['name'], difficulty_level, topic_title, chapter_title
         )
         
-        # Mark chapter as completed
+        # Mark chapter as completed in memory
         user_generated_content["chapter_completions"][chapter_content_key] = {
             "completed_at": datetime.now(),
             "student_id": student_id,
@@ -690,6 +708,30 @@ async def complete_chapter(
             "chapter_title": chapter_title,
             "difficulty_level": difficulty_level
         }
+        
+        # Persist completion to database
+        with db.get_connection() as conn:
+            # Check if progress record exists
+            existing = conn.execute("""
+                SELECT id FROM student_progress 
+                WHERE student_id = ? AND subject_id = ? AND topic = ? AND chapter = ?
+            """, (student_id, subject_id, topic_title, chapter_title)).fetchone()
+            
+            if existing:
+                # Update existing record
+                conn.execute("""
+                    UPDATE student_progress 
+                    SET completed = 1, created_at = CURRENT_TIMESTAMP
+                    WHERE student_id = ? AND subject_id = ? AND topic = ? AND chapter = ?
+                """, (student_id, subject_id, topic_title, chapter_title))
+            else:
+                # Insert new progress record
+                conn.execute("""
+                    INSERT INTO student_progress (student_id, subject_id, topic, chapter, completed, created_at)
+                    VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+                """, (student_id, subject_id, topic_title, chapter_title))
+            
+            conn.commit()
         
         return {
             "success": True,
