@@ -3,7 +3,6 @@
 ## Hackathon Track: **Jetson AI Edge Computing**
 
 **Project:** EduLibreX - Offline AI-Powered Personalized Education Platform  
-**Team:** Solo Developer  
 **Target Hardware:** NVIDIA Jetson Orin Nano (8GB)
 
 ---
