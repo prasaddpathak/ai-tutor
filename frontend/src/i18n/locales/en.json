@@ -82,6 +82,16 @@
       "gemma": "Advanced AI Language Model",
       "jetson": "Energy-Efficient Edge Computing"
     },
+    "team": {
+      "title": "Meet the Team",
+      "subtitle": "The passionate minds behind EduLibreX, dedicated to revolutionizing education through AI and edge computing.",
+      "sharvary": {
+        "description": "Led all research, user surveys, and product design to create the optimal user experience for educational discovery and AI-powered learning partnerships."
+      },
+      "prasad": {
+        "description": "Handled all prototyping, incremental development, and deployment using cutting-edge AI technologies, creating a complete offline education platform powered by Gemma 3n on NVIDIA Jetson Nano."
+      }
+    },
     "cta": {
       "title": "Ready to Transform Your Learning?",
       "description": "Join thousands of students already learning with EduLibreX's AI-powered, sustainable education platform.",

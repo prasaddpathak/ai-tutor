@@ -347,7 +347,7 @@ const LandingPage: React.FC = () => {
           >
             <Box sx={{ textAlign: 'center' }}>
               <Typography
-                variant="h4"
+                variant="h3"
                 fontWeight="bold"
                 gutterBottom
                 sx={{ color: '#0A5130' }}
@@ -402,6 +402,198 @@ const LandingPage: React.FC = () => {
               </Box>
             </Box>
           </motion.div>
+        </Container>
+      </Box>
+
+      {/* Team Section */}
+      <Box sx={{ py: 8, backgroundColor: alpha('#0A5130', 0.05) }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 6 }}>
+              <Typography
+                variant="h3"
+                fontWeight="bold"
+                gutterBottom
+                sx={{ color: '#0A5130' }}
+              >
+                {t('landing.team.title')}
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{ color: '#3B854E', maxWidth: 600, mx: 'auto' }}
+              >
+                {t('landing.team.subtitle')}
+              </Typography>
+            </Box>
+          </motion.div>
+
+          <Grid container spacing={3} justifyContent="center">
+            <Grid item xs={12} md={6}>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                viewport={{ once: true }}
+              >
+                <Card
+                  component="a"
+                  href="https://www.linkedin.com/in/sharvaryjoshi/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    height: '100%',
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: alpha('#3B854E', 0.1),
+                    transition: 'all 0.3s ease-in-out',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: `0 20px 40px ${alpha('#0A5130', 0.15)}`,
+                      borderColor: alpha('#D3B651', 0.4),
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 6, textAlign: 'center' }}>
+                    <Box
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: '50%',
+                        mx: 'auto',
+                        mb: 4,
+                        overflow: 'hidden',
+                        border: '3px solid',
+                        borderColor: alpha('#D3B651', 0.3),
+                        boxShadow: `0 8px 24px ${alpha('#0A5130', 0.1)}`,
+                        transition: 'all 0.3s ease-in-out',
+                        '&:hover': {
+                          borderColor: '#D3B651',
+                          transform: 'scale(1.05)',
+                        },
+                      }}
+                    >
+                      <img
+                        src="/sharvary.jpg"
+                        alt="Sharvary Joshi"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      gutterBottom
+                      sx={{ color: '#0A5130' }}
+                    >
+                      Sharvary Joshi
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ color: '#D3B651', mb: 3, fontWeight: 600 }}
+                    >
+                      Product Manager
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: '#3B854E', lineHeight: 1.6 }}
+                    >
+                      {t('landing.team.sharvary.description')}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <Card
+                  component="a"
+                  href="https://www.linkedin.com/in/prasaddpathak/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    height: '100%',
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: alpha('#3B854E', 0.1),
+                    transition: 'all 0.3s ease-in-out',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: `0 20px 40px ${alpha('#0A5130', 0.15)}`,
+                      borderColor: alpha('#D3B651', 0.4),
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 6, textAlign: 'center' }}>
+                    <Box
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: '50%',
+                        mx: 'auto',
+                        mb: 4,
+                        overflow: 'hidden',
+                        border: '3px solid',
+                        borderColor: alpha('#D3B651', 0.3),
+                        boxShadow: `0 8px 24px ${alpha('#0A5130', 0.1)}`,
+                        transition: 'all 0.3s ease-in-out',
+                        '&:hover': {
+                          borderColor: '#D3B651',
+                          transform: 'scale(1.05)',
+                        },
+                      }}
+                    >
+                      <img
+                        src="/prasad.jpg"
+                        alt="Prasad Pathak"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      gutterBottom
+                      sx={{ color: '#0A5130' }}
+                    >
+                      Prasad Pathak
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{ color: '#D3B651', mb: 3, fontWeight: 600 }}
+                    >
+                      Full-Stack Developer
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: '#3B854E', lineHeight: 1.6 }}
+                    >
+                      {t('landing.team.prasad.description')}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+          </Grid>
         </Container>
       </Box>
 

@@ -82,6 +82,16 @@
       "gemma": "Modelo de Lenguaje IA Avanzado",
       "jetson": "Computación de Borde Eficiente en Energía"
     },
+    "team": {
+      "title": "Conoce al Equipo",
+      "subtitle": "Las mentes apasionadas detrás de EduLibreX, dedicadas a revolucionar la educación a través de IA y computación de borde.",
+      "sharvary": {
+        "description": "Dirigió toda la investigación, encuestas de usuarios y diseño de producto para crear la experiencia de usuario óptima para el descubrimiento educativo y las asociaciones de aprendizaje impulsadas por IA."
+      },
+      "prasad": {
+        "description": "Manejó todo el prototipado, desarrollo incremental y despliegue utilizando tecnologías de IA de vanguardia, creando una plataforma educativa offline completa impulsada por Gemma 3n en NVIDIA Jetson Nano."
+      }
+    },
     "cta": {
       "title": "¿Listo para Transformar tu Aprendizaje?",
       "description": "Únete a miles de estudiantes que ya están aprendiendo con la plataforma educativa sostenible e impulsada por IA de EduLibreX.",
