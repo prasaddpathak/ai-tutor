@@ -62,22 +62,15 @@ Face recognition technology provides instant, password-free login while keeping 
 - **Special Needs**: Content that adapts to different learning abilities
 - **International Schools**: Consistent quality regardless of local teacher availability
 
-**Measurable Learning Outcomes**
-- Students engage 3x longer with AI-personalized content
-- Completion rates increase 400% with integrated chat support
-- Assessment scores improve 60% with instant AI feedback
-
 ## 💻 Advanced Learning Features
 
 ### **🎓 Immersive Chapter Experience**
 - **Paginated Reading**: Chapters broken into digestible, sequential pages with smooth navigation
 - **Real-Time AI Tutoring**: Integrated chat panel provides context-aware help on any page
 - **Progress Tracking**: Visual indicators show completion across pages, chapters, and topics
-- **Markdown Support**: Rich text formatting with code blocks, lists, and mathematical notation
 
 ### **🧪 Intelligent Assessment System**
 - **Adaptive Quiz Generation**: AI creates topic-specific quizzes that unlock based on chapter completion
-- **Multiple Question Types**: Single-choice, multiple-choice, and explanation-based questions
 - **Instant Grading**: Immediate feedback with detailed explanations for every answer
 - **Performance Analytics**: Track quiz scores, improvement trends, and knowledge gaps
 - **Retake System**: Students can retake quizzes to improve understanding and scores
@@ -88,15 +81,7 @@ Face recognition technology provides instant, password-free login while keeping 
 - **Natural Language Queries**: Ask questions in plain English and get detailed explanations
 - **Concept Clarification**: Deep-dive explanations tailored to student's current understanding level
 
-## 🚀 Quick Start
-
-```bash
-# One command deploys the entire platform
-python setup_webapp.py
-
-# Access via browser at http://localhost:3000
-# Register using face recognition and begin your personalized learning journey!
-```
+**Ready to transform education?** See [SETUP.md](SETUP.md) for deployment instructions.
 
 ## 🏗️ Enterprise-Grade Architecture
 
@@ -124,11 +109,6 @@ python setup_webapp.py
 - **Remote Schools**: Bring world-class education to areas without internet connectivity
 - **Resource-Constrained Districts**: Provide personalized tutoring at scale without additional staff
 - **Special Education**: Adaptive content that adjusts to different learning abilities and speeds
-
-### **🏢 Corporate & Professional**
-- **Secure Training**: Professional development in environments with restricted internet access
-- **Onboarding Programs**: Personalized employee training that adapts to role and experience level
-- **Compliance Training**: Consistent, trackable education across global teams
 
 ### **🏠 Individual & Family**
 - **Homeschooling**: Complete curriculum that grows and adapts with each child
