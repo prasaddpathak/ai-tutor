@@ -329,7 +329,7 @@ class DatabaseManager:
             return {row['subject_id']: row['difficulty_level'] for row in rows}
     
     def get_subjects_with_difficulty(self, student_id: int) -> List[Dict]:
-        """Get all subjects with their difficulty levels for a student."""
+        """Get subjects with their difficulty levels for a student (default subjects + user's custom subjects only)."""
         with self.get_connection() as conn:
             rows = conn.execute('''
                 SELECT s.*, ssd.difficulty_level, ssp.original_request, ssp.ai_generated_description
@@ -338,8 +338,14 @@ class DatabaseManager:
                     ON s.id = ssd.subject_id AND ssd.student_id = ?
                 LEFT JOIN student_subject_preferences ssp
                     ON s.id = ssp.subject_id AND ssp.student_id = ?
+                WHERE 
+                    -- Include default subjects (not in any student_subject_preferences)
+                    s.id NOT IN (SELECT DISTINCT subject_id FROM student_subject_preferences)
+                    OR 
+                    -- Include custom subjects created by this specific student
+                    ssp.student_id = ?
                 ORDER BY s.name
-            ''', (student_id, student_id)).fetchall()
+            ''', (student_id, student_id, student_id)).fetchall()
             return [dict(row) for row in rows]
     
     def create_custom_subject(self, student_id: int, name: str, description: str, 
