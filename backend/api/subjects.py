@@ -1265,31 +1265,51 @@ async def get_or_generate_quiz(
                 "has_attempted": best_result is not None
             }
         
-        # Check if all chapters are completed (have content generated)
-        content_key = get_user_content_key(student_id, subject_dict['name'], difficulty_level, topic_title)
+        # Check if chapters exist in database first (database-first approach)
+        english_chapters = get_content_by_language(
+            student_id=student_id,
+            subject_id=subject_id,
+            content_type='chapters',
+            difficulty_level=difficulty_level,
+            language_code='en',
+            topic_title=topic_title
+        )
         
-        if content_key not in user_generated_content["chapters"]:
+        if not english_chapters:
             raise HTTPException(status_code=400, detail="No chapters found. Please generate chapters first.")
         
-        chapters_data = user_generated_content["chapters"][content_key]
-        chapters = chapters_data["chapters"]
+        # Handle both list of chapters and single chapter content
+        if isinstance(english_chapters, list):
+            chapters = [Chapter(title=chapter['title'], content=chapter['content']) 
+                       for chapter in english_chapters]
+        else:
+            # Single chapter structure - convert to list
+            chapters = [Chapter(title=english_chapters.get('title', topic_title), 
+                              content=english_chapters.get('content', 'No content available'))]
         
-        # Check if all chapters have content generated
+        # Get all chapter content from database for quiz generation
         chapter_contents = []
         for chapter in chapters:
-            chapter_content_key = get_chapter_content_key(
-                student_id, subject_dict['name'], difficulty_level, topic_title, chapter.title
+            # Get chapter detail content from database
+            chapter_detail_content = get_content_by_language(
+                student_id=student_id,
+                subject_id=subject_id,
+                content_type='chapter_detail',
+                difficulty_level=difficulty_level,
+                language_code='en',
+                topic_title=topic_title,
+                chapter_title=chapter.title
             )
             
-            if chapter_content_key not in user_generated_content["chapter_content"]:
+            if not chapter_detail_content:
                 raise HTTPException(
                     status_code=400, 
                     detail=f"Chapter '{chapter.title}' content not generated. Please read all chapters first."
                 )
             
-            # Get all page content for this chapter
-            chapter_data = user_generated_content["chapter_content"][chapter_content_key]
-            chapter_full_content = "\n\n".join(chapter_data['pages'])
+            # Get all page content for this chapter from database
+            pages = [chapter_detail_content[f'page_{i}'] for i in range(1, 7)]
+            chapter_full_content = "\n\n".join(pages)
             chapter_contents.append(f"Chapter: {chapter.title}\n{chapter_full_content}")
         
         # Generate quiz questions
